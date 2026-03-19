@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+{% block extra_head %}
+<style>
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  background: var(--grad-hero);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.hero-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.9); /* Natural starting point */
+  transform: scale(1.02);
+}
+.hero-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hero-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 120px var(--space-8) var(--space-16);
+  text-align: center;
+}
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: var(--radius-full);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--sm);
+  color: white;
+  font-weight: 600;
+  margin-bottom: var(--space-6);
+  backdrop-filter: blur(8px);
+}
+.hero-title {
+  font-size: clamp(2.8rem, 7vw, 5.5rem);
+  font-weight: 900;
+  color: white;
+  line-height: 1.05;
+  margin-bottom: var(--space-6);
+  text-shadow: 0 4px 30px rgba(0,0,0,0.2);
+}
+.hero-title span { 
+  color: var(--yellow); 
+  background: linear-gradient(135deg, var(--yellow) 0%, #fff 50%, var(--yellow) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 4s ease-in-out infinite;
+}
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: rgba(255,255,255,0.85);
+  max-width: 600px;
+  margin: 0 auto var(--space-10);
+  line-height: 1.7;
+}
+.hero-actions {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-bowl {
+  position: absolute;
+  font-size: 4rem;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25));
+}
+/* How it works */
+.how-section { padding: var(--space-20) 0; }
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+.how-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: all var(--t-normal);
+}
+.how-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-glow); border-color: var(--green-light); }
+.how-icon {
+  width: 70px; height: 70px;
+  border-radius: var(--radius-lg);
+  background: var(--grad-hero);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto var(--space-5);
+  transition: transform var(--t-normal);
+}
+.how-card:hover .how-icon { transform: rotate(8deg) scale(1.1); }
+.how-step-number {
+  position: absolute;
+  top: -12px; right: var(--space-5);
+  background: var(--orange);
+  color: white;
+  font-size: var(--xs);
+  font-weight: 700;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Providers section */
+.providers-section { padding: var(--space-16) 0; background: var(--bg); }
+.section-header { text-align: center; margin-bottom: var(--space-10); }
+.section-tag {
+  display: inline-block;
+  background: rgba(168,184,91,0.12);
+  color: var(--green-dark);
+  font-size: var(--xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-3);
+}
+.section-title { font-size: var(--h2); font-weight: 800; margin-bottom: var(--space-3); }
+.section-sub   { color: var(--text-muted); max-width: 500px; margin: 0 auto; }
+
+/* Meals section */
+.meals-section { padding: var(--space-16) 0; background: white; }
+
+/* CTA section */
+.cta-section {
+  padding: var(--space-20) var(--space-8);
+  background: var(--grad-dark);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(168,184,91,0.2) 0%, transparent 70%);
+}
+.cta-content { position: relative; z-index: 1; }
+.cta-title { font-size: var(--h1); color: white; margin-bottom: var(--space-4); }
+.cta-title span { color: var(--yellow); }
+.cta-sub   { color: rgba(255,255,255,0.7); margin-bottom: var(--space-8); font-size: 1.1rem; }
+
+/* Footer */
+footer {
+  background: #0e1a06;
+  color: rgba(255,255,255,0.7);
+  padding: 0 0 var(--space-8);
+  position: relative;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--space-10);
+  margin-bottom: var(--space-10);
+}
+.footer-brand { font-size: 1.5rem; font-weight: 800; color: white; margin-bottom: var(--space-3); }
+.footer-brand span { color: var(--yellow); }
+.footer-desc { font-size: var(--sm); line-height: 1.8; }
+.footer-heading { font-size: var(--sm); font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; margin-bottom: var(--space-4); }
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.footer-links a { font-size: var(--sm); color: rgba(255,255,255,0.6); transition: color var(--t-fast); }
+.footer-links a:hover { color: var(--yellow); }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: var(--space-6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--xs);
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+  .hero-actions { flex-direction: column; align-items: center; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Public Navbar -->
+<nav class="public-nav" id="publicNav">
+  <a href="/" class="navbar-brand">Digi<span style="color:var(--yellow)">Bhoj</span> 🍛</a>
+  <div class="nav-links">
+    <a href="#providers">Providers</a>
+    <a href="#how">How It Works</a>
+    <a href="#meals">Meals</a>
+  </div>
+  <div class="navbar-actions">
+    {% if user %}
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.2)" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:var(--yellow);color:var(--text);font-weight:700">
+            {{ user.name[0]|upper }}
+          </div>
+          <span style="font-size:var(--sm);font-weight:600">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu" style="right:0;top:45px">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+            <div style="font-weight:700;font-size:var(--sm)">{{ user.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">{{ user.role.value|title }} Account</div>
+          </div>
+          <a href="/{% if user.role.value == 'customer' %}customer/home{% elif user.role.value == 'provider' %}provider/dashboard{% elif user.role.value == 'delivery' %}delivery/dashboard{% else %}admin/dashboard{% endif %}" class="dropdown-item">
+            <i class="fa fa-chart-line"></i> Go to Dashboard
+          </a>
+          <a href="/{% if user.role.value == 'customer' %}customer/profile{% elif user.role.value == 'provider' %}provider/profile{% elif user.role.value == 'delivery' %}delivery/profile{% else %}admin/dashboard{% endif %}" class="dropdown-item">
+            <i class="fa fa-user-circle"></i> Profile Settings
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger">
+            <i class="fa fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
+      </div>
+    {% else %}
+      <a href="/login" class="btn btn-ghost" style="color:white;border-color:rgba(255,255,255,0.3)">Login</a>
+      <a href="/register" class="btn btn-primary">Sign Up</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero-liquid">
+  <div class="hero-liquid__bg">
+    <img src="/assets/images/cinematic-meal.png" id="hero-bg-img" alt="Cinematic Indian Meal">
+  </div>
+  
+  <div class="hero-liquid__particles" id="hero-particles"></div>
+  
+  <canvas id="liquid-canvas" class="hero-liquid__canvas"></canvas>
+
+  <div class="hero-liquid__foreground">
+    <div class="hero-liquid__brand">
+      <h1 class="hero-liquid__title">Digi<span>Bhoj</span></h1>
+      <p class="hero-liquid__tagline">Smart Mess & Tiffin Platform</p>
+    </div>
+
+    <div class="hero-actions" data-reveal="up" data-delay="300">
+      <a href="/register?role=customer" class="btn btn-primary btn-xl magnetic">
+        <i class="fa fa-search"></i> Find Meals
+      </a>
+      <a href="/register?role=provider" class="btn btn-xl magnetic" style="background:rgba(255,255,255,0.15);color:white;border:2px solid rgba(255,255,255,0.5);backdrop-filter:blur(8px)">
+        <i class="fa fa-store"></i> Join as Provider
+      </a>
+      <a href="/register?role=delivery" class="btn btn-xl magnetic" style="background:rgba(243,154,31,0.85);color:white">
+        <i class="fa fa-motorcycle"></i> Delivery Partner
+      </a>
+    </div>
+
+    <div class="hero-liquid__hint">
+      <i class="fa fa-mouse-pointer"></i> Touch the water to reveal the feast below
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="container">
+    <div class="section-header" data-reveal="up">
+      <div class="section-tag">Simple & Fast</div>
+      <h2 class="section-title">How DigiBhoj Works</h2>
+      <p class="section-sub">Three simple steps to enjoy authentic homemade food every day</p>
+    </div>
+    <div class="how-grid">
+      {% for step in [
+        {'icon':'🔍','title':'Discover Providers','desc':'Browse verified local mess and tiffin services near you with ratings and reviews.','n':'01'},
+        {'icon':'🛒','title':'Choose Your Meals','desc':'Browse daily menus, filter by cuisine, and add your favourite meals to cart.','n':'02'},
+        {'icon':'🚀','title':'Fast Home Delivery','desc':'Your freshly cooked meal arrives hot at your doorstep within minutes.','n':'03'}
+      ] %}
+      <div class="how-card card-tilt" data-reveal="up" data-delay="{{ loop.index * 100 }}">
+        <div style="position:relative;display:inline-block">
+          <div class="how-icon">{{ step.icon }}</div>
+          <div class="how-step-number">{{ step.n }}</div>
+        </div>
+        <h3 style="margin-bottom:var(--space-3)">{{ step.title }}</h3>
+        <p style="color:var(--text-muted);margin:0">{{ step.desc }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- PROVIDERS -->
+<section class="providers-section" id="providers">
+  <div class="container">
+    <div class="section-header" data-reveal="up">
+      <div class="section-tag">Verified & Trusted</div>
+      <h2 class="section-title">Popular Mess Providers</h2>
+      <p class="section-sub">All providers are verified by DigiBhoj for quality and hygiene</p>
+    </div>
+    {% if providers %}
+    <div class="provider-grid">
+      {% for p in providers %}
+      <a href="/customer/provider/{{ p.id }}" class="provider-card card-tilt" data-reveal="up" data-delay="{{ loop.index * 100 }}">
+        <div class="img-zoom">
+          <img src="{{ p.image_url or '/assets/images/provider-default.jpg' }}" 
+               alt="{{ p.mess_name }}" class="provider-card-img"
+               onerror="this.src='/assets/images/provider-default.jpg'">
+        </div>
+        <div class="provider-card-body">
+          <h3 class="provider-card-title">{{ p.mess_name }}</h3>
+          <div class="provider-card-meta">
+            <span><i class="fa fa-utensils"></i> {{ p.cuisine_type or 'Multi-Cuisine' }}</span>
+            <span><i class="fa fa-map-marker-alt"></i> {{ p.location or 'Pune' }}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-4)">
+            <div>
+              <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}{% if p.rating % 1 >= 0.5 %}½{% endif %}</span>
+              <span style="font-size:var(--xs);color:var(--text-muted)">({{ p.total_reviews }})</span>
+            </div>
+            <span class="btn btn-secondary btn-sm">View Menu</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" data-reveal="up">
+      <i class="fa fa-store"></i>
+      <h3>No providers yet</h3>
+      <p>Be the first to register as a provider!</p>
+      <a href="/register?role=provider" class="btn btn-primary">Join as Provider</a>
+    </div>
+    {% endif %}
+    <div style="text-align:center;margin-top:var(--space-10)" data-reveal="up">
+      <a href="/customer/home" class="btn btn-outline btn-lg">
+        <i class="fa fa-arrow-right"></i> View All Providers
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- MEALS SHOWCASE -->
+<section class="meals-section" id="meals">
+  <div class="container">
+    <div class="section-header" data-reveal="up">
+      <div class="section-tag">Fresh Daily</div>
+      <h2 class="section-title">Delicious Meal Options</h2>
+      <p class="section-sub">Authentic Indian meals cooked fresh every day by our providers</p>
+    </div>
+    {% if meals %}
+    <div class="meal-grid">
+      {% for m in meals %}
+      <div class="meal-card card-tilt" data-reveal="up" data-delay="{{ loop.index * 80 }}">
+        <div class="img-zoom">
+          <img src="{{ m.image_url or '/assets/images/meal-default.jpg' }}" 
+               alt="{{ m.name }}" class="meal-card-img"
+               onerror="this.src='/assets/images/meal-default.jpg'">
+        </div>
+        <div class="meal-card-body">
+          <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)">
+            <span class="badge {{ 'badge-veg' if m.is_veg else 'badge-nonveg' }}">
+              {{ '🟢 Veg' if m.is_veg else '🔴 Non-Veg' }}
+            </span>
+            <span class="badge badge-gray">{{ m.category.value if m.category else 'Lunch' }}</span>
+          </div>
+          <h4 class="meal-card-name">{{ m.name }}</h4>
+          <p style="font-size:var(--xs);color:var(--text-muted);margin-bottom:var(--space-3);line-height:1.5">
+            {{ m.description[:60] ~ '...' if m.description and m.description|length > 60 else m.description or '' }}
+          </p>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="meal-card-price">₹{{ m.price|int }}</span>
+            <a href="/customer/provider/{{ m.provider_id }}" class="btn btn-primary btn-sm">Order</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="cta-section">
+  <div class="cta-content">
+    <div class="section-tag" style="background:rgba(244,217,43,0.15);color:var(--yellow);margin-bottom:var(--space-5)" data-reveal="up">Join The Community</div>
+    <h2 class="cta-title" data-reveal="up" data-delay="100">Hungry for <span>Fresh</span> Food?</h2>
+    <p class="cta-sub" data-reveal="up" data-delay="200">Join thousands of customers enjoying authentic homemade meals daily</p>
+    <div style="display:flex;gap:var(--space-4);justify-content:center;flex-wrap:wrap" data-reveal="up" data-delay="300">
+      <a href="/register" class="btn btn-primary btn-xl magnetic">
+        <i class="fa fa-user-plus"></i> Create Account
+      </a>
+      <a href="/login" class="btn btn-xl magnetic" style="background:rgba(255,255,255,0.1);color:white;border:2px solid rgba(255,255,255,0.3)">
+        <i class="fa fa-sign-in-alt"></i> Sign In
+      </a>
+    </div>
+    <!-- Stats -->
+    <div style="display:flex;gap:var(--space-16);justify-content:center;margin-top:var(--space-12);flex-wrap:wrap" data-reveal="up" data-delay="400">
+      {% for s in [('1000+','Happy Customers'),('50+','Verified Providers'),('5000+','Orders Delivered')] %}
+      <div style="text-align:center">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--yellow)" class="count-up">{{ s[0] }}</div>
+        <div style="font-size:var(--sm);color:rgba(255,255,255,0.6)">{{ s[1] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div style="position:relative;background:transparent;margin-top:var(--space-20)">
+  <svg viewBox="0 0 1440 120" style="display:block;width:100%;height:auto;fill:#0e1a06;margin-bottom:-1px">
+    <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z"></path>
+  </svg>
+  <footer>
+    <div class="container" style="padding-top:var(--space-8)">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">Digi<span>Bhoj</span> 🍛</div>
+          <p class="footer-desc">Smart Mess & Tiffin Platform connecting hungry customers with trusted local food providers across India.</p>
+          <div style="margin-top:var(--space-6)">
+            <p style="font-size:var(--sm);font-weight:600;color:white;margin-bottom:8px">Subscribe to our Newsletter</p>
+            <div style="display:flex;gap:8px">
+              <input type="email" placeholder="Enter email" class="form-control" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;flex:1">
+              <button class="btn btn-primary" style="padding:0 var(--space-4)"><i class="fa fa-paper-plane"></i></button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="footer-heading">Platform</div>
+          <ul class="footer-links">
+            <li><a href="/register?role=customer">Find Meals</a></li>
+            <li><a href="/register?role=provider">List Your Mess</a></li>
+            <li><a href="/register?role=delivery">Deliver with Us</a></li>
+            <li><a href="/login">Partner Login</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-heading">Support</div>
+          <ul class="footer-links">
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-heading">Connect</div>
+          <ul class="footer-links">
+            <li><a href="#"><i class="fab fa-instagram" style="width:20px"></i> Instagram</a></li>
+            <li><a href="#"><i class="fab fa-twitter" style="width:20px"></i> Twitter</a></li>
+            <li><a href="#"><i class="fab fa-facebook" style="width:20px"></i> Facebook</a></li>
+            <li><a href="#"><i class="fab fa-youtube" style="width:20px"></i> YouTube</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2024-2026 DigiBhoj. All rights reserved.</span>
+        <span>Made with ❤️ for Fresh Food Lovers</span>
+      </div>
+    </div>
+  </footer>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/assets/js/hero.js"></script>
+<script>
+// Navbar scroll effect
+const nav = document.getElementById('publicNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+</script>
+{% endblock %}

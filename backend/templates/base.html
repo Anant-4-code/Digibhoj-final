@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" {% if not user or user.role.value in ['customer', 'provider'] %}data-theme-role="orange"{% endif %}>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}DigiBhoj{% endblock %} — Smart Mess & Tiffin Platform</title>
+<meta name="description" content="{% block description %}Discover fresh homemade meals from trusted local mess and tiffin providers.{% endblock %}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍛</text></svg>">
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<!-- CSS -->
+<link rel="stylesheet" href="/assets/css/design-system.css?v=1.1">
+<link rel="stylesheet" href="/assets/css/components.css?v=1.1">
+<link rel="stylesheet" href="/assets/css/animations.css?v=1.1">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+{% block body %}{% endblock %}
+
+<!-- Theme Toggle -->
+<button id="themeToggle" title="Toggle Dark Mode" style="position:fixed;bottom:20px;left:20px;width:45px;height:45px;border-radius:50%;background:var(--card-bg);color:var(--text);border:1px solid var(--border);box-shadow:0 4px 12px var(--shadow);z-index:9900;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)">
+  <i class="fa fa-moon"></i>
+</button>
+
+<div id="toast-container"></div>
+<!-- JS -->
+<script>
+  // Global context for scripts
+  window.DigiBhoj = {
+    userRole: "{{ user.role.value if user else '' }}",
+    userId: "{{ user.id if user else '' }}",
+    roleId: "{{ user.customer.id if (user and user.customer) else (user.provider.id if (user and user.provider) else (user.delivery_agent.id if (user and user.delivery_agent) else '')) }}"
+  };
+</script>
+<script src="/assets/js/effects.js"></script>
+<script src="/assets/js/animations.js"></script>
+<script src="/assets/js/toast.js"></script>
+<script src="/assets/js/order-polling.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

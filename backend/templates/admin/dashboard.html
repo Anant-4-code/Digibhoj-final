@@ -1,0 +1,185 @@
+{% extends "admin/base.html" %}
+
+{% block extra_head %}
+<style>
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 32px; }
+    .metric-card { display: flex; align-items: center; gap: 20px; }
+    .metric-icon { width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+    .metric-icon.blue { background: rgba(30,136,229,0.1); color: #1e88e5; }
+    .metric-icon.green { background: rgba(168,184,91,0.15); color: var(--admin-primary); }
+    .metric-icon.orange { background: rgba(243,154,31,0.15); color: var(--admin-secondary); }
+    .metric-icon.red { background: rgba(217,30,24,0.1); color: #D91E18; }
+    .metric-info { flex: 1; }
+    .metric-label { font-size: 0.8rem; color: var(--admin-text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .metric-value { font-size: 1.8rem; font-weight: 800; color: var(--admin-text-main); font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+    
+    .dashboard-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .card-title { font-size: 1.1rem; font-weight: 600; color: var(--admin-text-main); }
+    
+    .live-feed-list { display: flex; flex-direction: column; gap: 16px; }
+    .feed-item { display: flex; gap: 12px; align-items: flex-start; }
+    .feed-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+    .feed-icon.order { background: #f1f5f9; color: var(--admin-text-muted); }
+    .feed-icon.user { background: rgba(168,184,91,0.15); color: #65752E; }
+    .feed-icon.alert { background: rgba(217,30,24,0.1); color: var(--danger); }
+    .feed-content { flex: 1; }
+    .feed-text { font-size: 0.9rem; color: var(--admin-text-main); line-height: 1.4; }
+    .feed-time { font-size: 0.75rem; color: var(--admin-text-muted); margin-top: 4px; }
+    
+    /* Pulse animation for live data indicator */
+    .live-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--admin-primary); font-weight: 700; background: rgba(168,184,91,0.15); padding: 5px 12px; border-radius: 20px; letter-spacing: 1px; }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--admin-primary); animation: pulseLive 1.5s infinite; }
+    @keyframes pulseLive { 0% { box-shadow: 0 0 0 0 rgba(168,184,91,0.4); } 70% { box-shadow: 0 0 0 8px rgba(168,184,91,0); } 100% { box-shadow: 0 0 0 0 rgba(168,184,91,0); } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">System Dashboard</h1>
+        <p class="page-desc">Real-time overview of DigiBhoj platform operations.</p>
+    </div>
+    <div class="live-indicator">
+        <div class="live-dot"></div>
+        LIVE SYNC
+    </div>
+</div>
+
+<div class="metrics-grid">
+    <div class="card metric-card">
+        <div class="metric-icon blue"><i class="fa fa-users"></i></div>
+        <div class="metric-info">
+            <div class="metric-label">Total Users</div>
+            <div class="metric-value" id="val-users">--</div>
+        </div>
+    </div>
+    <div class="card metric-card">
+        <div class="metric-icon green"><i class="fa fa-utensils"></i></div>
+        <div class="metric-info">
+            <div class="metric-label">Active Providers</div>
+            <div class="metric-value" id="val-providers">--</div>
+        </div>
+    </div>
+    <div class="card metric-card">
+        <div class="metric-icon orange"><i class="fa fa-boxes-stacked"></i></div>
+        <div class="metric-info">
+            <div class="metric-label">Orders Today</div>
+            <div class="metric-value" id="val-orders">--</div>
+        </div>
+    </div>
+    <div class="card metric-card">
+        <div class="metric-icon red"><i class="fa fa-indian-rupee-sign"></i></div>
+        <div class="metric-info">
+            <div class="metric-label">Total Revenue</div>
+            <div class="metric-value" id="val-revenue">₹--</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-layout">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Pending Verifications</h2>
+            <a href="/admin-super-control-portal-x9k2-secure/verifications" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="verifications-body">
+                    <tr><td colspan="5" style="text-align:center;color:var(--admin-text-muted)">Loading pending verifications...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Live Activity Feed</h2>
+        </div>
+        <div class="live-feed-list" id="activity-feed">
+            <div class="feed-item">
+                <div class="feed-icon alert"><i class="fa fa-shield-halved"></i></div>
+                <div class="feed-content">
+                    <div class="feed-text">Admin session started securely</div>
+                    <div class="feed-time">Just now</div>
+                </div>
+            </div>
+            <!-- Dynamic items will be prepended here in production -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Polling mechanism for real-time dashboard data
+    async function fetchDashboardData() {
+        try {
+            const res = await fetch('/api/admin/overview');
+            if(res.ok) {
+                const data = await res.json();
+                
+                // Animate value changes
+                animateValue('val-users', data.total_customers); // Using customers as users for now
+                animateValue('val-providers', data.total_providers);
+                animateValue('val-orders', data.total_orders);
+                animateValue('val-revenue', '₹' + parseInt(data.total_revenue).toLocaleString('en-IN'));
+                
+                // Demo: update pending verifications
+                const tbody = document.getElementById('verifications-body');
+                if (data.pending_provider_verifications > 0 || data.pending_delivery_verifications > 0) {
+                    tbody.innerHTML = `
+                        ${data.pending_provider_verifications > 0 ? `
+                        <tr>
+                            <td>#P...</td>
+                            <td>Pending Providers</td>
+                            <td>Provider</td>
+                            <td><span class="badge warning"><i class="fa fa-clock"></i> Pending (${data.pending_provider_verifications})</span></td>
+                            <td><a href="/admin-super-control-portal-x9k2-secure/verifications" class="btn btn-primary btn-sm">Review</a></td>
+                        </tr>` : ''}
+                        ${data.pending_delivery_verifications > 0 ? `
+                        <tr>
+                            <td>#D...</td>
+                            <td>Pending Agents</td>
+                            <td>Delivery Agent</td>
+                            <td><span class="badge warning"><i class="fa fa-clock"></i> Pending (${data.pending_delivery_verifications})</span></td>
+                            <td><a href="/admin-super-control-portal-x9k2-secure/verifications" class="btn btn-primary btn-sm">Review</a></td>
+                        </tr>` : ''}
+                    `;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--admin-text-muted)">No pending verifications. All caught up!</td></tr>';
+                }
+            }
+        } catch(e) {
+            console.error("Failed to fetch dashboard metrics", e);
+        }
+    }
+
+    function animateValue(id, value) {
+        const el = document.getElementById(id);
+        if(el.textContent !== String(value)) {
+            el.textContent = value;
+            el.style.transform = 'scale(1.1)';
+            el.style.color = 'var(--primary)';
+            setTimeout(() => {
+                el.style.transform = 'scale(1)';
+                el.style.color = 'var(--admin-text-main)';
+            }, 300);
+        }
+    }
+
+    // Initial fetch
+    fetchDashboardData();
+    // Poll every 10 seconds for real-time feel
+    setInterval(fetchDashboardData, 10000);
+</script>
+{% endblock %}

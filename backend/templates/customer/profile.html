@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+    </div>
+    
+    <div class="navbar-actions">
+      <a href="/customer/cart" class="cart-badge" style="color:white;font-size:1.2rem;margin-right:var(--space-4)">
+        <i class="fa fa-shopping-cart"></i>
+        {% if cart_count > 0 %}<span class="count">{{ cart_count }}</span>{% endif %}
+      </a>
+      
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px">{{ user.name[0]|upper }}</div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/customer/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
+          <a href="/customer/orders" class="dropdown-item"><i class="fa fa-list-alt"></i> My Orders</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Menu</div>
+    <a href="/customer/home" class="sidebar-item">
+      <i class="fa fa-home"></i> Explore
+    </a>
+    <a href="/customer/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/customer/profile" class="sidebar-item active">
+      <i class="fa fa-user"></i> Profile
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1>My Profile</h1>
+      <p>Manage your account settings and delivery address</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:var(--space-8)">
+      
+      <!-- Profile Card -->
+      <div class="section-card" style="align-self:start;text-align:center">
+        <div class="avatar avatar-xl" style="margin:0 auto var(--space-4)">{{ user.name[0]|upper }}</div>
+        <h2 style="margin-bottom:var(--space-1)">{{ user.name }}</h2>
+        <div style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">
+          <div class="badge badge-gray" style="margin-top:var(--space-2)"><i class="fa fa-user"></i> Customer</div>
+        </div>
+        
+        <div style="text-align:left;font-size:var(--sm)">
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Email</strong>
+            {{ user.email }}
+          </div>
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Member Since</strong>
+            {{ user.created_at.strftime('%B %Y') if user.created_at else 'N/A' }}
+          </div>
+        </div>
+        
+        <a href="/logout" class="btn btn-outline btn-full" style="color:var(--red);border-color:var(--red);margin-top:var(--space-6)">
+          <i class="fa fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+
+      <!-- Update Form -->
+      <div class="section-card" style="padding:0;overflow:hidden">
+        <div class="tabs-header" style="display:flex;background:var(--bg);border-bottom:1px solid var(--border)">
+          <button class="tab-btn active" onclick="switchProfileTab(event, 'personal')" style="flex:1;padding:16px;border:none;background:none;font-weight:600;color:var(--text);cursor:pointer;border-bottom:2px solid var(--brand-primary)">Personal Info</button>
+          <button class="tab-btn" onclick="switchProfileTab(event, 'security')" style="flex:1;padding:16px;border:none;background:none;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent">Security</button>
+          <button class="tab-btn" onclick="switchProfileTab(event, 'notifications')" style="flex:1;padding:16px;border:none;background:none;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent">Notifications</button>
+        </div>
+
+        <div id="personal" class="profile-tab-content" style="padding:var(--space-8)">
+          <h3 style="margin-bottom:var(--space-6)">Account Information</h3>
+          <form action="/customer/action/profile/update" method="POST">
+            <div class="form-group">
+              <label class="form-label" for="name">Full Name</label>
+              <input type="text" id="name" name="name" class="form-control" value="{{ user.name }}" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="tel" id="phone" name="phone" class="form-control" value="{{ customer.phone }}" required>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="address">Default Delivery Address</label>
+              <textarea id="address" name="address" class="form-control" rows="4">{{ customer.address }}</textarea>
+              <p style="font-size:var(--xs);color:var(--text-muted);margin-top:var(--space-1)"><i class="fa fa-info-circle"></i> This address will be auto-filled during checkout.</p>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg" style="margin-top:var(--space-4)">
+              <i class="fa fa-save"></i> Save Changes
+            </button>
+          </form>
+        </div>
+
+        <div id="security" class="profile-tab-content" style="padding:var(--space-8);display:none">
+          <h3 style="margin-bottom:var(--space-6)">Security Settings</h3>
+          <form onsubmit="event.preventDefault(); alert('In this simulation, password change is mock-only.');">
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-control" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-control" placeholder="New Password">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-control" placeholder="Confirm Password">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+          </form>
+          
+          <div style="margin-top:var(--space-10);padding:var(--space-4);background:rgba(217,30,24,0.05);border:1px solid rgba(217,30,24,0.2);border-radius:var(--radius)">
+            <h4 style="color:var(--red);margin-bottom:var(--space-2)">Danger Zone</h4>
+            <p style="font-size:var(--sm);color:var(--red);margin-bottom:var(--space-4)">Once you delete your account, there is no going back. Please be certain.</p>
+            <button class="btn btn-outline" style="border-color:var(--red);color:var(--red)">Delete Account</button>
+          </div>
+        </div>
+
+        <div id="notifications" class="profile-tab-content" style="padding:var(--space-8);display:none">
+          <h3 style="margin-bottom:var(--space-6)">Notification Preferences</h3>
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <span>Email Notifications</span>
+              <input type="checkbox" checked>
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <span>Order Status Updates</span>
+              <input type="checkbox" checked>
+            </label>
+            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+              <span>Promotional Offers</span>
+              <input type="checkbox">
+            </label>
+          </div>
+        </div>
+
+      </div>
+      
+    </div>
+  </main>
+</div>
+
+{% block extra_js %}
+<script>
+function switchProfileTab(evt, tabId) {
+  // Declare all variables
+  var i, tabcontent, tablinks;
+
+  // Get all elements with class="profile-tab-content" and hide them
+  tabcontent = document.getElementsByClassName("profile-tab-content");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+
+  // Get all elements with class="tab-btn" and remove the class "active"
+  tablinks = document.getElementsByClassName("tab-btn");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].classList.remove("active");
+    tablinks[i].style.color = "var(--text-muted)";
+    tablinks[i].style.borderColor = "transparent";
+  }
+
+  // Show the current tab, and add an "active" class to the button that opened the tab
+  document.getElementById(tabId).style.display = "block";
+  evt.currentTarget.classList.add("active");
+  evt.currentTarget.style.color = "var(--text)";
+  evt.currentTarget.style.borderColor = "var(--brand-primary)";
+}
+</script>
+{% endblock %}
+{% endblock %}

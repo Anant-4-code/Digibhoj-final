@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}{{ provider.mess_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.provider-banner {
+  height: 250px;
+  background: var(--grad-hero);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-12);
+}
+.provider-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+.provider-info-card {
+  position: absolute;
+  bottom: -40px;
+  left: var(--space-8);
+  right: var(--space-8);
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid var(--border);
+}
+.meal-card-horizontal {
+  display: flex;
+  background: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  margin-bottom: var(--space-5);
+  transition: all var(--t-fast);
+}
+.meal-card-horizontal:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--brand-primary-light); }
+.meal-card-horizontal img {
+  width: 160px;
+  height: 100%;
+  object-fit: cover;
+}
+.meal-details {
+  padding: var(--space-4) var(--space-5);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.review-item {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+}
+.review-item:last-child { border-bottom: none; }
+
+@media (max-width: 768px) {
+  .provider-info-card { flex-direction: column; align-items: flex-start; gap: var(--space-4); position: static; margin-top: -40px; }
+  .meal-card-horizontal { flex-direction: column; }
+  .meal-card-horizontal img { width: 100%; height: 200px; }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<!-- Reusable Customer Navbar -->
+<nav class="navbar">
+  <div style="display:flex;align-items:center;gap:var(--space-4)">
+    <a href="/customer/home" style="color:white"><i class="fa fa-arrow-left"></i> Back</a>
+    <a href="/customer/home" class="navbar-brand" style="margin-left:var(--space-4)">Digi<span>Bhoj</span></a>
+  </div>
+  <div class="navbar-actions">
+    <a href="/customer/cart" class="cart-badge" style="color:white;font-size:1.2rem;margin-right:var(--space-4)">
+      <i class="fa fa-shopping-cart"></i>
+      {% if cart_count > 0 %}<span class="count">{{ cart_count }}</span>{% endif %}
+    </a>
+  </div>
+</nav>
+
+<main class="container page-enter" style="padding-top:var(--space-8);padding-bottom:var(--space-12)">
+  
+  <div class="provider-banner">
+    <img src="{{ provider.image_url or '/assets/images/provider-default.jpg' }}" alt="Banner" class="provider-banner-img" onerror="this.src='/assets/images/provider-default.jpg'">
+    
+    <div class="provider-info-card">
+      <div>
+        <h1 style="font-size:var(--h2);margin-bottom:0">{{ provider.mess_name }}</h1>
+        <div style="display:flex;gap:var(--space-4);color:var(--text-muted);margin-top:var(--space-2);font-size:var(--sm)">
+          <span><i class="fa fa-utensils"></i> {{ provider.cuisine_type }}</span>
+          <span><i class="fa fa-map-marker-alt"></i> {{ provider.location }}</span>
+          <span><i class="fa fa-clock"></i> {{ provider.operating_hours }}</span>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="stars" style="font-size:1.2rem">{% for i in range((provider.rating|default(0))|int) %}★{% endfor %}{% if (provider.rating|default(0)) % 1 >= 0.5 %}½{% endif %}</div>
+        <div style="font-size:var(--sm);color:var(--text-muted)">{{ provider.total_reviews|default(0) }} Reviews</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-8);margin-top:80px">
+    
+    <!-- Menu Section -->
+    <div>
+      <h2 style="margin-bottom:var(--space-6)">Today's Menu</h2>
+      
+      <!-- Filter Pills -->
+      <div class="filter-pills">
+        <div class="pill active">All Meals</div>
+        <div class="pill">🟢 Veg Only</div>
+        <div class="pill">Breakfast</div>
+        <div class="pill">Lunch</div>
+        <div class="pill">Dinner</div>
+      </div>
+
+      {% if meals %}
+        {% for m in meals %}
+        <div class="meal-card-horizontal">
+          <img src="{{ m.image_url or '/assets/images/meal-default.jpg' }}" onerror="this.src='/assets/images/meal-default.jpg'">
+          <div class="meal-details">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1)">
+                  <span class="badge {{ 'badge-veg' if m.is_veg else 'badge-nonveg' }}">{{ 'Veg' if m.is_veg else 'Non-Veg' }}</span>
+                  <span class="badge badge-gray">{{ m.category.value if m.category else 'Meal' }}</span>
+                </div>
+                <h3 style="font-size:1.1rem;margin-bottom:var(--space-1)">{{ m.name }}</h3>
+                <p style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-3)">{{ m.description }}</p>
+              </div>
+              <div style="font-size:1.4rem;font-weight:700;color:var(--brand-primary-dark)">₹{{ m.price|int }}</div>
+            </div>
+            
+            <div style="margin-top:auto">
+              <form action="/customer/action/cart/add" method="POST" style="display:flex;align-items:center;gap:var(--space-4)">
+                <input type="hidden" name="meal_id" value="{{ m.id }}">
+                <input type="hidden" name="provider_id" value="{{ provider.id }}">
+                
+                <div class="qty-control">
+                  <button type="button" class="qty-btn" onclick="this.nextElementSibling.value = Math.max(1, parseInt(this.nextElementSibling.value) - 1)">-</button>
+                  <input type="number" name="quantity" class="qty-value" value="1" min="1" max="10" style="border:none;background:transparent;outline:none;-moz-appearance:textfield;width:30px">
+                  <button type="button" class="qty-btn" onclick="this.previousElementSibling.value = parseInt(this.previousElementSibling.value) + 1">+</button>
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-sm">
+                  Add to Cart <i class="fa fa-plus"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <i class="fa fa-utensils"></i>
+          <h3>No meals available currently</h3>
+          <p>Please check back later when the provider updates their menu.</p>
+        </div>
+      {% endif %}
+    </div>
+    
+    <!-- Provider About & Reviews -->
+    <div>
+      <div class="section-card">
+        <h3 class="section-card-title">About this Mess</h3>
+        <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-4)">
+          {{ provider.description or 'Authentic local taste.' }}
+        </p>
+        <div style="font-size:var(--sm);color:var(--text-muted)">
+          <div style="margin-bottom:var(--space-2)"><i class="fa fa-phone-alt"></i> Contact Provider</div>
+          <div><i class="fa fa-shield-check" style="color:var(--green)"></i> FSSAI Certified</div>
+        </div>
+      </div>
+
+      <div class="section-card" style="margin-top:var(--space-6)">
+        <h3 class="section-card-title">Recent Reviews</h3>
+        {% if reviews %}
+          {% for r in reviews %}
+          <div class="review-item">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-1)">
+              <div style="font-weight:600;font-size:var(--sm)">{{ r.customer.user.name if r.customer and r.customer.user else 'Customer' }}</div>
+              <div class="stars" style="font-size:var(--sm)">{% for i in range(r.rating|int) %}★{% endfor %}</div>
+            </div>
+            <p style="font-size:var(--sm);color:var(--text-muted);margin:0">"{{ r.comment }}"</p>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="font-size:var(--sm);color:var(--text-muted);text-align:center;padding:var(--space-4) 0">No reviews yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

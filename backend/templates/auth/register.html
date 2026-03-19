@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block extra_head %}
+<style>
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: var(--space-6) 0;
+  position: relative;
+  overflow: hidden;
+}
+.auth-card {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 2;
+  border: 1px solid var(--border);
+  margin: var(--space-10) auto;
+}
+.role-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: var(--space-6);
+}
+.role-tab {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-3);
+  font-weight: 600;
+  font-size: var(--sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--t-fast);
+  text-decoration: none;
+}
+.role-tab:hover { color: var(--green); }
+.role-tab.active { color: var(--green-dark); }
+.role-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; width: 100%; height: 2px;
+  background: var(--green);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+  <div class="auth-card pop-in">
+    <div style="text-align:center;margin-bottom:var(--space-6)">
+      <a href="/" style="font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--green);text-decoration:none">
+        Digi<span style="color:var(--yellow)">Bhoj</span> 🍛
+      </a>
+      <h1 style="font-size:var(--h3);margin-top:var(--space-2)">Create Account</h1>
+      <p style="color:var(--text-muted);font-size:var(--sm)">Join DigiBhoj to start your journey</p>
+    </div>
+
+    <!-- Role Selection Tabs -->
+    <div class="role-tabs">
+      <a href="/register?role=customer" class="role-tab {% if role == 'customer' %}active{% endif %}">
+        <i class="fa fa-user"></i> Customer
+      </a>
+      <a href="/register?role=provider" class="role-tab {% if role == 'provider' %}active{% endif %}">
+        <i class="fa fa-store"></i> Provider
+      </a>
+      <a href="/register?role=delivery" class="role-tab {% if role == 'delivery' %}active{% endif %}">
+        <i class="fa fa-motorcycle"></i> Delivery
+      </a>
+    </div>
+
+    {% if error %}
+    <div class="alert-box alert-error"><i class="fa fa-exclamation-triangle"></i> {{ error }}</div>
+    {% endif %}
+
+    {% if logged_in_user %}
+    <div style="text-align:center;padding:var(--space-6);background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:var(--space-4)">
+      <div class="avatar" style="margin:0 auto var(--space-4);width:56px;height:56px;background:var(--green);color:white;font-size:1.5rem">
+        {{ logged_in_user.name[0]|upper }}
+      </div>
+      <h3 style="margin-bottom:var(--space-2)">You're already signed in!</h3>
+      <p style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-6)">
+        You are currently logged in as <strong>{{ logged_in_user.name }}</strong> ({{ logged_in_user.role.value }}). 
+        To create a new account with a different role, please logout first.
+      </p>
+      
+      <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <a href="/{% if logged_in_user.role.value == 'customer' %}customer/home{% elif logged_in_user.role.value == 'provider' %}provider/dashboard{% elif logged_in_user.role.value == 'delivery' %}delivery/dashboard{% else %}admin/dashboard{% endif %}" class="btn btn-primary">
+          Back to Your Dashboard
+        </a>
+        <a href="/logout" class="btn btn-outline" style="color:var(--red);border-color:var(--red)">
+          Logout and Create New Account
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <form action="/api/auth/register" method="POST">
+      <input type="hidden" name="role" value="{{ role }}">
+
+      <!-- Common Fields -->
+      <div class="floating-group">
+        <input type="text" name="name" id="name" class="floating-input" placeholder=" " required>
+        <label for="name" class="floating-label">Full Name</label>
+      </div>
+      <div class="floating-group">
+        <input type="email" name="email" id="email" class="floating-input" placeholder=" " required>
+        <label for="email" class="floating-label">Email Address</label>
+      </div>
+      <div class="floating-group">
+        <input type="password" name="password" id="password" class="floating-input" placeholder=" " required>
+        <label for="password" class="floating-label">Password</label>
+      </div>
+      <div class="floating-group">
+        <input type="tel" name="phone" id="phone" class="floating-input" placeholder=" " required>
+        <label for="phone" class="floating-label">Phone Number</label>
+      </div>
+
+      <!-- Role Specific Fields -->
+      {% if role == 'customer' %}
+      <div class="floating-group">
+        <textarea name="address" id="address" class="floating-input" placeholder=" " required></textarea>
+        <label for="address" class="floating-label">Delivery Address</label>
+      </div>
+      
+      {% elif role == 'provider' %}
+      <div class="floating-group">
+        <input type="text" name="mess_name" id="mess_name" class="floating-input" placeholder=" " required>
+        <label for="mess_name" class="floating-label">Mess Name</label>
+      </div>
+      <div class="floating-group">
+        <input type="text" name="location" id="location" class="floating-input" placeholder=" " required>
+        <label for="location" class="floating-label">Mess Location / Area</label>
+      </div>
+      <div class="floating-group">
+        <select name="cuisine_type" id="cuisine_type" class="floating-input" required style="padding-top:1.2rem">
+          <option value="North Indian">North Indian</option>
+          <option value="South Indian">South Indian</option>
+          <option value="Maharashtrian">Maharashtrian</option>
+          <option value="Gujarati">Gujarati</option>
+          <option value="Punjabi">Punjabi</option>
+          <option value="Multi-Cuisine">Multi-Cuisine</option>
+        </select>
+        <label for="cuisine_type" class="floating-label" style="top:0;font-size:var(--xs);color:var(--green-dark);font-weight:600">Cuisine Type</label>
+      </div>
+      <div class="floating-group">
+        <input type="text" name="operating_hours" id="operating_hours" class="floating-input" placeholder=" " value="9AM - 9PM" required>
+        <label for="operating_hours" class="floating-label">Operating Hours</label>
+      </div>
+      <div class="floating-group">
+        <textarea name="description" id="description" class="floating-input" placeholder=" "></textarea>
+        <label for="description" class="floating-label">Description (optional)</label>
+      </div>
+      
+      {% elif role == 'delivery' %}
+      <div class="floating-group">
+        <select name="vehicle_type" id="vehicle_type" class="floating-input" required style="padding-top:1.2rem">
+          <option value="Bike">Bike</option>
+          <option value="Scooter">Scooter</option>
+          <option value="Cycle">Cycle</option>
+        </select>
+        <label for="vehicle_type" class="floating-label" style="top:0;font-size:var(--xs);color:var(--green-dark);font-weight:600">Vehicle Type</label>
+      </div>
+      <div class="floating-group">
+        <input type="text" name="license_number" id="license_number" class="floating-input" placeholder=" " required>
+        <label for="license_number" class="floating-label">Driving License Number</label>
+      </div>
+      <div class="floating-group">
+        <input type="text" name="service_area" id="service_area" class="floating-input" placeholder=" " required>
+        <label for="service_area" class="floating-label">Preferred Service Area (e.g., Kothrud, Pune)</label>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn btn-primary btn-xl btn-full" style="margin-top:var(--space-4)">
+        Create {{ role|title }} Account <i class="fa fa-arrow-right"></i>
+      </button>
+    </form>
+    {% endif %}
+
+    <div style="text-align:center;margin-top:var(--space-6);font-size:var(--sm);color:var(--text-muted)">
+      Already have an account? 
+      <a href="/login" style="color:var(--green-dark);font-weight:600">Sign In</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

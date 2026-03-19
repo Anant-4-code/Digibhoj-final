@@ -1,0 +1,119 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Orders Control Room</h1>
+        <p class="page-desc">System-wide order monitoring, tracking, and intervention.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">All Platform Orders</h2>
+        <div class="header-search" style="width:250px;">
+            <i class="fa fa-search"></i>
+            <input type="text" id="order-search" placeholder="Search Order ID, Name..." onkeyup="filterOrders()">
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Provider</th>
+                    <th>Date/Time</th>
+                    <th>Total Value</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="orders-body">
+                <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">Loading tracking data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let allOrders = [];
+
+    async function loadOrders() {
+        try {
+            const res = await fetch('/api/admin/orders');
+            if(res.ok) {
+                allOrders = await res.json();
+                renderOrders(allOrders);
+            }
+        } catch(e) {
+            console.error("Order Fetch Error:", e);
+        }
+    }
+
+    function renderOrders(ordersData) {
+        const tbody = document.getElementById('orders-body');
+        tbody.innerHTML = '';
+        
+        if (ordersData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">No orders found.</td></tr>';
+            return;
+        }
+
+        ordersData.forEach(o => {
+            let statusBadge = '';
+            switch(o.status) {
+                case 'delivered':
+                case 'completed': statusBadge = `<span class="badge success">${o.status}</span>`; break;
+                case 'cancelled': statusBadge = `<span class="badge danger">${o.status}</span>`; break;
+                default: statusBadge = `<span class="badge" style="background:rgba(243,154,31,0.15); color:var(--admin-secondary)">${o.status}</span>`; break;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>#ORD-${o.id}</strong></td>
+                <td>${o.customer_name}</td>
+                <td>${o.provider_name}</td>
+                <td><small>${new Date(o.created_at).toLocaleString()}</small></td>
+                <td>₹${parseFloat(o.total_price).toFixed(2)}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline" title="View Full Timeline"><i class="fa fa-timeline"></i> Timeline</button>
+                    ${!['delivered', 'completed', 'cancelled'].includes(o.status) ? 
+                        `<button class="btn btn-icon btn-outline" style="color:var(--danger)" title="Force Cancel Order" onclick="forceCancelOrder(${o.id})"><i class="fa fa-ban"></i></button>` : ''}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterOrders() {
+        const query = document.getElementById('order-search').value.toLowerCase();
+        const filtered = allOrders.filter(o => 
+            String(o.id).includes(query) || 
+            o.customer_name.toLowerCase().includes(query) || 
+            o.provider_name.toLowerCase().includes(query)
+        );
+        renderOrders(filtered);
+    }
+
+    async function forceCancelOrder(id) {
+        if(!confirm("Are you sure you want to forcibly cancel this active order?")) return;
+        try {
+            const res = await fetch(`/api/admin/orders/cancel/${id}`, { method: 'PUT' });
+            if(res.ok) {
+                showToast("Order forcibly cancelled by admin.", "success");
+                loadOrders();
+            } else {
+                showToast("Failed to cancel order.", "error");
+            }
+        } catch(e) {
+            showToast("Network error.", "error");
+        }
+    }
+
+    loadOrders();
+    // Refresh periodically
+    setInterval(loadOrders, 15000);
+</script>
+{% endblock %}

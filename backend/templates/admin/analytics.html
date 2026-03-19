@@ -1,0 +1,116 @@
+{% extends "admin/base.html" %}
+
+{% block extra_head %}
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .chart-container { position: relative; height: 350px; width: 100%; }
+    .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Platform Analytics</h1>
+        <p class="page-desc">Visualize growth, revenue trends, and overall system performance.</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:24px;">
+    <h2 class="card-title">Daily Order Volume</h2>
+    <div class="chart-container">
+        <canvas id="ordersChart"></canvas>
+    </div>
+</div>
+
+<div class="analytics-grid">
+    <div class="card">
+        <h2 class="card-title">Revenue Trends</h2>
+        <div class="chart-container" style="height:250px;">
+            <canvas id="revenueChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2 class="card-title">User Demographics</h2>
+        <div class="chart-container" style="height:250px; display:flex; justify-content:center;">
+            <canvas id="usersChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadAnalytics() {
+        try {
+            const res = await fetch('/api/admin/analytics');
+            if(res.ok) {
+                const data = await res.json();
+                renderCharts(data.daily_data);
+            }
+        } catch(e) { console.error("Error loading analytics", e); }
+    }
+
+    function renderCharts(dailyData) {
+        // Extract labels (dates) and data points
+        const labels = Object.keys(dailyData).sort();
+        const orderCounts = labels.map(day => dailyData[day].count);
+        const revenues = labels.map(day => dailyData[day].revenue);
+
+        // Chart defaults matching DigiBhoj theme
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.color = "var(--admin-text-muted)";
+        Chart.defaults.scale.grid.color = "var(--admin-border)";
+
+        // Orders Line Chart
+        new Chart(document.getElementById('ordersChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily Orders',
+                    data: orderCounts,
+                    borderColor: '#A8B85B',
+                    backgroundColor: 'rgba(168,184,91,0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4 // Smooth curves
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Revenue Bar Chart
+        new Chart(document.getElementById('revenueChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: revenues,
+                    backgroundColor: '#F39A1F',
+                    borderRadius: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // Users Doughnut (Mocked distribution for now)
+        new Chart(document.getElementById('usersChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Customers', 'Providers', 'Delivery Partners'],
+                datasets: [{
+                    data: [75, 15, 10], // Static mock ratio
+                    backgroundColor: ['#A8B85B', '#F4D92B', '#F39A1F'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", loadAnalytics);
+</script>
+{% endblock %}

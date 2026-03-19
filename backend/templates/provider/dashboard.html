@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Provider Dashboard{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+    </div>
+    
+    <div class="navbar-actions">
+      <!-- Notifications -->
+      <div class="dropdown" data-dropdown style="margin-right:var(--space-2)">
+        <div class="cart-badge" style="color:white;font-size:1.2rem;cursor:pointer" data-dropdown-trigger>
+          <i class="fa-regular fa-bell"></i>
+          <span class="count" style="background:var(--red);top:-8px;right:-8px">2</span>
+        </div>
+        <div class="dropdown-menu" style="width:300px;right:-10px;top:45px">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;color:var(--text)">
+            Notifications <span style="font-size:10px;color:var(--orange);cursor:pointer">Mark all as read</span>
+          </div>
+          <div style="max-height:300px;overflow-y:auto;color:var(--text)">
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;color:var(--text)">New Order Received! <i class="fa fa-receipt text-orange" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Order #4092 from John Doe is awaiting your acceptance.</div>
+            </a>
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;color:var(--text)">New Review <i class="fa fa-star text-yellow" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Anita gave a 5-star rating for "Maharashtrian Thali".</div>
+            </a>
+          </div>
+          <a href="#" class="dropdown-item" style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View All</a>
+        </div>
+      </div>
+
+      <div class="badge badge-gray" style="background:rgba(255,255,255,0.2);color:white;text-transform:none">
+        <i class="fa fa-star" style="color:var(--yellow)"></i> {{ provider.rating|default(0) }} ({{ provider.total_reviews|default(0) }})
+      </div>
+      
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-store"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} 
+            {% if provider.verification_status.value == 'verified' %}
+            <i class="fa fa-circle-check" style="color:#b3e5fc;margin-left:4px" title="Verified Provider"></i>
+            {% endif %}
+            <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i>
+          </span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/provider/profile" class="dropdown-item"><i class="fa fa-cog"></i> Settings</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Management</div>
+    <a href="/provider/dashboard" class="sidebar-item active">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/provider/menu" class="sidebar-item">
+      <i class="fa fa-utensils"></i> My Menu
+    </a>
+    <a href="/provider/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+      {% if pending_orders > 0 %}<span class="badge badge-orange" style="margin-left:auto">{{ pending_orders }}</span>{% endif %}
+    </a>
+    <a href="/provider/delivery" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Assign Delivery
+    </a>
+    <a href="/provider/analytics" class="sidebar-item">
+      <i class="fa fa-chart-bar"></i> Analytics
+    </a>
+    
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/provider/profile" class="sidebar-item">
+      <i class="fa fa-user-circle"></i> Profile
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <h1>Welcome back, {{ user.name }}</h1>
+        <p>Here's what's happening at {{ provider.mess_name }} today.</p>
+      </div>
+      <div class="status-badge status-{{ provider.verification_status.value }}" style="font-size:var(--sm);padding:8px 16px">
+        <i class="fa fa-{% if provider.verification_status.value == 'verified' %}check-circle{% else %}clock{% endif %}"></i> 
+        Provider {{ provider.verification_status.value|title }}
+      </div>
+    </div>
+
+    {% if provider.verification_status.value == 'pending' %}
+    <div class="alert-box alert-warning">
+      <i class="fa fa-info-circle"></i> Your provider account is currently pending admin verification. Customers cannot see your mess yet.
+    </div>
+    {% endif %}
+
+    {% if provider.verification_status.value == 'blocked' %}
+    <div class="alert-box alert-error">
+      <i class="fa fa-ban"></i> Your provider account has been restricted by the admin. Please contact support.
+    </div>
+    {% endif %}
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card orange">
+        <div class="stat-icon"><i class="fa fa-clipboard-list"></i></div>
+        <div class="stat-value count-up">{{ today_orders }}</div>
+        <div class="stat-label">Orders Today</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon"><i class="fa fa-rupee-sign"></i></div>
+        <div class="stat-value count-up" data-prefix="₹">{{ total_revenue|int }}</div>
+        <div class="stat-label">Total Revenue</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon"><i class="fa fa-clock"></i></div>
+        <div class="stat-value count-up">{{ pending_orders }}</div>
+        <div class="stat-label">Pending Orders</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="fa fa-fire"></i></div>
+        <div class="stat-value" style="font-size:1.5rem">{{ top_meal }}</div>
+        <div class="stat-label">Top Selling Meal</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-8)">
+      
+      <!-- Recent Orders Table -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <h3 class="section-card-title">Recent Orders</h3>
+          <a href="/provider/orders" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        
+        {% if recent_orders %}
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td><strong style="color:var(--text)">#{{ o.id }}</strong></td>
+              <td>
+                <div style="font-weight:600">{{ o.customer.user.name }}</div>
+                <div style="font-size:11px;color:var(--text-muted)">{{ o.created_at.strftime('%I:%M %p') if o.created_at else '' }}</div>
+              </td>
+              <td style="font-weight:700">₹{{ o.total_price|int }}</td>
+              <td><span class="status-badge status-{{ o.order_status.value }}">{{ o.order_status.value|title }}</span></td>
+              <td>
+                <form action="/provider/action/order/status/{{ o.id }}" method="POST" style="margin:0;display:flex;gap:4px">
+                  {% if o.order_status.value == 'created' %}
+                  <button type="submit" name="status" value="confirmed" class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:11px">Accept</button>
+                  <button type="submit" name="status" value="cancelled" class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red)"><i class="fa fa-times"></i></button>
+                  {% elif o.order_status.value == 'confirmed' %}
+                  <button type="submit" name="status" value="preparing" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;border-color:var(--orange);color:var(--orange)">Start Prep</button>
+                  {% elif o.order_status.value == 'preparing' %}
+                  <button type="submit" name="status" value="ready" class="btn btn-secondary btn-sm" style="padding:4px 8px;font-size:11px">Mark Ready</button>
+                  {% else %}
+                  <span style="font-size:11px;color:var(--text-muted)">No action</span>
+                  {% endif %}
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center;padding:var(--space-6) 0;color:var(--text-muted)">
+          <i class="fa fa-receipt" style="font-size:2rem;opacity:0.3;margin-bottom:var(--space-2)"></i>
+          <p>No new orders yet today.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="section-card">
+        <h3 class="section-card-title">Quick Actions</h3>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <a href="/provider/menu" class="btn btn-outline btn-full" style="justify-content:flex-start">
+            <i class="fa fa-plus-circle" style="width:24px"></i> Add New Meal
+          </a>
+          <a href="/provider/delivery" class="btn btn-outline btn-full" style="justify-content:flex-start">
+            <i class="fa fa-motorcycle" style="width:24px"></i> Assign Driver
+          </a>
+          <a href="/provider/profile" class="btn btn-outline btn-full" style="justify-content:flex-start">
+            <i class="fa fa-clock" style="width:24px"></i> Update Timing
+          </a>
+        </div>
+
+        <div style="margin-top:var(--space-8);padding-top:var(--space-4);border-top:1px solid var(--border)">
+          <div style="font-size:var(--sm);font-weight:700;margin-bottom:var(--space-2)">Today's Summary</div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--sm);margin-bottom:4px;color:var(--text-muted)">
+            <span>Active Menu Items</span>
+            <span style="font-weight:700;color:var(--text)">{{ provider.meals|length }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--sm);color:var(--text-muted)">
+            <span>Reviews</span>
+            <span style="font-weight:700;color:var(--text)">{{ provider.total_reviews|default(0) }}</span>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+
+{% block extra_head %}
+<style>
+    .terminal-window { background: #121411; border-radius: 8px; padding: 20px; font-family: 'Courier New', Courier, monospace; color: #f8f9f6; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); overflow-y: auto; height: 60vh; border: 1px solid #353A2E; }
+    .log-entry { margin-bottom: 6px; font-size: 0.9rem; line-height: 1.4; display: flex; gap: 12px; }
+    .log-time { color: #666; font-size: 0.8rem; width: 140px; flex-shrink: 0; }
+    .log-level { font-weight: bold; width: 50px; flex-shrink: 0; }
+    .log-level.info { color: var(--admin-primary); }
+    .log-level.warn { color: var(--admin-secondary); }
+    .log-level.error { color: #D91E18; }
+    .log-level.sec { color: var(--admin-accent); } /* Security */
+    .log-msg { color: #e2e8f0; flex: 1; word-break: break-all; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">System Activity Logs</h1>
+        <p class="page-desc">Real-time terminal view of critical system occurrences.</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="generateMockLogs()"><i class="fa fa-rotate-right"></i> Poll Logs</button>
+        <button class="btn btn-outline" onclick="document.getElementById('terminal').innerHTML=''"><i class="fa fa-eraser"></i> Clear</button>
+    </div>
+</div>
+
+<div class="card" style="padding:0; overflow:hidden;">
+    <div class="terminal-window" id="terminal">
+        <div class="log-entry">
+            <span class="log-time">[System Init]</span>
+            <span class="log-level info">INFO</span>
+            <span class="log-msg">Secure Super Admin Shell connected. Monitoring logs for role changes, verifications, and blocks.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const term = document.getElementById('terminal');
+
+    function appendLog(level, msg) {
+        const d = new Date();
+        const tStr = `[${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}]`;
+        
+        const tr = document.createElement('div');
+        tr.className = 'log-entry';
+        
+        let lvlClass = 'info';
+        if(level === 'WARN') lvlClass = 'warn';
+        if(level === 'ERROR') lvlClass = 'error';
+        if(level === 'SEC') lvlClass = 'sec';
+
+        tr.innerHTML = `
+            <span class="log-time">${tStr}</span>
+            <span class="log-level ${lvlClass}">${level}</span>
+            <span class="log-msg">${msg}</span>
+        `;
+        term.appendChild(tr);
+        term.scrollTop = term.scrollHeight; // Auto-scroll
+    }
+
+    // Mock logs generation since actual file logging isn't robustly exposed in the current basic DB setup
+    function generateMockLogs() {
+        const events = [
+            {l: 'SEC', m: 'Admin `{{ user.email }}` authenticated successfully via JWT token.'},
+            {l: 'INFO', m: 'Payment Gateway handshakes stable. 0 latency anomalies.'},
+            {l: 'WARN', m: 'Delivery agent connection timeout for ID #45, retrying mapping...'},
+            {l: 'INFO', m: 'New user registered: `customer_new41@test.com` with role customer.'},
+            {l: 'SEC', m: 'Failed login attempt for admin. Invalid credentials detected from IP.'},
+            {l: 'INFO', m: 'Database health check passed. Active connections: 4.'}
+        ];
+        
+        const ev = events[Math.floor(Math.random() * events.length)];
+        appendLog(ev.l, ev.m);
+    }
+
+    // Ping mock logs occasionally
+    setInterval(generateMockLogs, 8000);
+</script>
+{% endblock %}

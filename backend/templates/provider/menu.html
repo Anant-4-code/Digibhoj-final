@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+{% block title %}Manage Menu{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-store"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Management</div>
+    <a href="/provider/dashboard" class="sidebar-item">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/provider/menu" class="sidebar-item active">
+      <i class="fa fa-utensils"></i> My Menu
+    </a>
+    <a href="/provider/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/provider/delivery" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Assign Delivery
+    </a>
+    <a href="/provider/analytics" class="sidebar-item">
+      <i class="fa fa-chart-bar"></i> Analytics
+    </a>
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/provider/profile" class="sidebar-item">
+      <i class="fa fa-user-circle"></i> Profile
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h1>My Menu</h1>
+        <p>Manage the meals and subscription plans you offer</p>
+      </div>
+      <button class="btn btn-primary" data-modal-open="addMealModal">
+        <i class="fa fa-plus"></i> Add New Item
+      </button>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div style="display:flex;gap:var(--space-6);border-bottom:2px solid var(--border);margin-bottom:var(--space-6)">
+      <a href="#" class="tab-link active" onclick="switchTab(event, 'alacarte')" style="padding:var(--space-2) 0;font-weight:600;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;text-decoration:none">
+        <i class="fa fa-utensils"></i> A la Carte Menu
+      </a>
+      <a href="#" class="tab-link" onclick="switchTab(event, 'mealplans')" style="padding:var(--space-2) 0;font-weight:600;color:var(--text-muted);text-decoration:none">
+        <i class="fa fa-calendar-alt"></i> Meal Plans
+      </a>
+    </div>
+
+    <!-- A la Carte Section -->
+    <div id="tab-alacarte" class="menu-tab-content">
+      {% if meals %}
+      <div class="data-table" style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:var(--orange);color:white;text-align:left">
+              <th style="padding:var(--space-4);font-weight:600">Meal Details</th>
+              <th style="padding:var(--space-4);font-weight:600">Category</th>
+              <th style="padding:var(--space-4);font-weight:600">Type</th>
+              <th style="padding:var(--space-4);font-weight:600">Price</th>
+              <th style="padding:var(--space-4);font-weight:600;text-align:right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in meals %}
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:var(--space-3) var(--space-4)">
+                <div style="display:flex;align-items:center;gap:var(--space-4)">
+                  <img src="{{ m.image_url }}" onerror="this.src='/assets/images/meal-default.jpg'" style="width:50px;height:50px;object-fit:cover;border-radius:var(--radius-sm)">
+                  <div>
+                    <div style="font-weight:600;color:var(--text)">{{ m.name }}</div>
+                    <div style="font-size:12px;color:var(--text-muted);max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.description }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="padding:var(--space-4);">{{ m.category.value if m.category else 'Meal' }}</td>
+              <td style="padding:var(--space-4);">
+                <span class="badge {{ 'badge-veg' if m.is_veg else 'badge-nonveg' }}" style="font-size:10px">{{ 'Veg' if m.is_veg else 'Non-Veg' }}</span>
+              </td>
+              <td style="padding:var(--space-4);font-weight:700">₹{{ m.price|int }}</td>
+              <td style="padding:var(--space-4);text-align:right">
+                <button class="btn btn-ghost btn-sm btn-edit-meal" 
+                        data-id="{{ m.id }}"
+                        data-name="{{ m.name|escape }}"
+                        data-price="{{ m.price|int }}"
+                        data-category="{{ m.category.value if m.category else 'Meal' }}"
+                        data-isveg="{{ m.is_veg }}"
+                        data-description="{{ m.description|escape }}"
+                        data-image="{{ m.image_url|escape }}">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <form action="/provider/action/meal/delete/{{ m.id }}" method="POST" style="margin:0;display:inline" onsubmit="return confirm('Are you sure you want to delete this meal?');">
+                  <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)"><i class="fa fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="fa fa-utensils" style="font-size:4rem;color:var(--border);margin-bottom:var(--space-4)"></i>
+        <h3 style="margin-bottom:var(--space-2)">Your menu is empty</h3>
+        <p style="color:var(--text-muted);margin-bottom:var(--space-6)">Add meals to start receiving orders from customers.</p>
+        <button class="btn btn-primary btn-xl" data-modal-open="addMealModal">Add Your First Meal</button>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Meal Plans Section -->
+    <div id="tab-mealplans" class="menu-tab-content" style="display:none">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:var(--space-6)">
+        
+        {% if plans %}
+          {% for p in plans %}
+          <div class="section-card" style="position:relative;overflow:hidden; border: {{ '2px solid var(--orange)' if p.duration == 'monthly' else '1px solid var(--border)' }}">
+            {% if not p.is_active %}
+            <div style="position:absolute;top:0;right:0;background:var(--red);color:white;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 0 0 8px;text-transform:uppercase;letter-spacing:1px">Inactive</div>
+            {% else %}
+            <div style="position:absolute;top:0;right:0;background:{{ 'var(--orange)' if p.duration == 'monthly' else 'var(--green)' }};color:white;font-size:10px;font-weight:700;padding:4px 12px;border-radius:0 0 0 8px;text-transform:uppercase;letter-spacing:1px">{{ p.duration|title }} Plan</div>
+            {% endif %}
+            
+            <h3 style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)">
+              <i class="fa fa-{{ 'calendar-alt' if p.duration == 'monthly' else 'calendar-week' }}" style="color:var(--orange)"></i> {{ p.name }}
+            </h3>
+            <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-4)">{{ p.description }}</p>
+            <div style="font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:var(--space-6)">₹{{ p.price|int }}<span style="font-size:var(--sm);color:var(--text-muted);font-weight:500"> /{{ 'month' if p.duration == 'monthly' else 'week' }}</span></div>
+            <hr style="border:none;border-top:1px dashed var(--border);margin-bottom:var(--space-4)">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);font-size:var(--sm)">
+              {% for feature in p.features %}
+              <div style="display:flex;align-items:center;gap:var(--space-2)"><i class="fa fa-check text-green"></i> {{ feature }}</div>
+              {% endfor %}
+            </div>
+            <div style="margin-top:var(--space-6);display:flex;gap:var(--space-2)">
+              <button class="btn btn-outline btn-sm btn-edit-plan" 
+                      style="flex:1"
+                      data-id="{{ p.id }}"
+                      data-name="{{ p.name|escape }}"
+                      data-description="{{ p.description|escape }}"
+                      data-price="{{ p.price|int }}"
+                      data-duration="{{ p.duration }}"
+                      data-features="{{ p.features|join(',')|escape }}">
+                Edit
+              </button>
+              <form action="/provider/action/plan/toggle/{{ p.id }}" method="POST" style="flex:1;margin:0">
+                <button type="submit" class="btn btn-outline btn-sm" style="width:100%; color:{{ 'var(--green)' if not p.is_active else 'var(--red)' }}; border-color:{{ 'var(--green)' if not p.is_active else 'var(--red)' }}">
+                  {{ 'Enable' if not p.is_active else 'Disable' }}
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% endif %}
+
+        <!-- Add New Plan -->
+        <div class="section-card" data-modal-open="addPlanModal" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border);background:transparent;cursor:pointer;min-height:300px;transition:all var(--t-fast)" onmouseover="this.style.borderColor='var(--orange)';this.style.background='rgba(243,154,31,0.05)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
+          <div style="width:50px;height:50px;border-radius:50%;background:rgba(243,154,31,0.1);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:var(--space-4)">
+            <i class="fa fa-plus"></i>
+          </div>
+          <h3 style="color:var(--text);text-align:center">Create Subscription Plan</h3>
+          <p style="color:var(--text-muted);font-size:var(--sm);text-align:center;max-width:200px">Offer custom weekly or monthly meal plans to your regular customers.</p>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit Meal Modal -->
+<div class="modal-overlay" id="editMealModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Meal</h3>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <form id="editMealForm" action="" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="edit_name">Meal Name</label>
+        <input type="text" id="edit_name" name="name" class="form-control" required>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label" for="edit_price">Price (₹)</label>
+          <input type="number" id="edit_price" name="price" class="form-control" required min="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_category">Category</label>
+          <select id="edit_category" name="category" class="form-control" required>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Dinner">Dinner</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Food Type</label>
+        <div style="display:flex;gap:var(--space-4)">
+          <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer">
+            <input type="radio" name="is_veg" id="edit_veg_true" value="true"> <span class="badge badge-veg">Veg</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer">
+            <input type="radio" name="is_veg" id="edit_veg_false" value="false"> <span class="badge badge-nonveg">Non-Veg</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="edit_description">Description</label>
+        <textarea id="edit_description" name="description" class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit_image_url">Image URL</label>
+        <input type="url" id="edit_image_url" name="image_url" class="form-control">
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full">Update Meal</button>
+    </form>
+  </div>
+</div>
+
+<!-- Add Meal Modal -->
+<div class="modal-overlay" id="addMealModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Add New Meal</h3>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <form action="/provider/action/meal/add" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="name">Meal Name</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Deluxe Veg Thali" required>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label" for="price">Price (₹)</label>
+          <input type="number" id="price" name="price" class="form-control" placeholder="100" required min="10">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="category">Category</label>
+          <select id="category" name="category" class="form-control" required>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch" selected>Lunch</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Dinner">Dinner</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Food Type</label>
+        <div style="display:flex;gap:var(--space-4)">
+          <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer">
+            <input type="radio" name="is_veg" value="true" checked> <span class="badge badge-veg">Veg</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer">
+            <input type="radio" name="is_veg" value="false"> <span class="badge badge-nonveg">Non-Veg</span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="description">Description (Optional)</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Tell customers what's in this dish..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="image_url">Image URL (Optional)</label>
+        <input type="url" id="image_url" name="image_url" class="form-control" placeholder="https://example.com/meal.jpg">
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full">Create Meal</button>
+    </form>
+  </div>
+</div>
+
+<!-- Add Plan Modal -->
+<div class="modal-overlay" id="addPlanModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Create Subscription Plan</h3>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <form action="/provider/action/plan/add" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="plan_name">Plan Name</label>
+        <input type="text" id="plan_name" name="name" class="form-control" placeholder="e.g. Monthly Saver" required>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label" for="plan_price">Price (₹)</label>
+          <input type="number" id="plan_price" name="price" class="form-control" placeholder="4500" required min="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="plan_duration">Duration</label>
+          <select id="plan_duration" name="duration" class="form-control" required>
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="plan_description">Short Description</label>
+        <input type="text" id="plan_description" name="description" class="form-control" placeholder="e.g. 2 meals a day for 30 days" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="plan_features">Features (Comma separated)</label>
+        <textarea id="plan_features" name="features" class="form-control" rows="3" placeholder="60 Total Meals, Priority Support, Free Delivery"></textarea>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full">Create Plan</button>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Plan Modal -->
+<div class="modal-overlay" id="editPlanModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Subscription Plan</h3>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <form id="editPlanForm" action="" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="edit_plan_name">Plan Name</label>
+        <input type="text" id="edit_plan_name" name="name" class="form-control" required>
+      </div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+        <div class="form-group">
+          <label class="form-label" for="edit_plan_price">Price (₹)</label>
+          <input type="number" id="edit_plan_price" name="price" class="form-control" required min="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_plan_duration">Duration</label>
+          <select id="edit_plan_duration" name="duration" class="form-control" required>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="edit_plan_description">Short Description</label>
+        <input type="text" id="edit_plan_description" name="description" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="edit_plan_features">Features (Comma separated)</label>
+        <textarea id="edit_plan_features" name="features" class="form-control" rows="3"></textarea>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-full">Update Plan</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Modal Logic
+document.querySelectorAll('[data-modal-open]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const modalId = btn.getAttribute('data-modal-open');
+    document.getElementById(modalId).classList.add('active');
+  });
+});
+
+document.querySelectorAll('[data-modal-close]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.modal-overlay').classList.remove('active');
+  });
+});
+
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('active');
+  }
+});
+
+function openEditModal(data) {
+  const modal = document.getElementById('editMealModal');
+  const form = document.getElementById('editMealForm');
+  
+  form.action = `/provider/action/meal/update/${data.id}`;
+  document.getElementById('edit_name').value = data.name;
+  document.getElementById('edit_price').value = data.price;
+  document.getElementById('edit_category').value = data.category;
+  document.getElementById('edit_description').value = data.description;
+  document.getElementById('edit_image_url').value = data.image;
+  
+  if (data.isveg === 'True' || data.isveg === 'true') {
+    document.getElementById('edit_veg_true').checked = true;
+  } else {
+    document.getElementById('edit_veg_false').checked = true;
+  }
+  
+  modal.classList.add('active');
+}
+
+function openEditPlanModal(data) {
+  const modal = document.getElementById('editPlanModal');
+  const form = document.getElementById('editPlanForm');
+  
+  form.action = `/provider/action/plan/update/${data.id}`;
+  document.getElementById('edit_plan_name').value = data.name;
+  document.getElementById('edit_plan_price').value = data.price;
+  document.getElementById('edit_plan_duration').value = data.duration;
+  document.getElementById('edit_plan_description').value = data.description;
+  document.getElementById('edit_plan_features').value = data.features;
+  
+  modal.classList.add('active');
+}
+
+document.addEventListener('click', e => {
+  const mealBtn = e.target.closest('.btn-edit-meal');
+  if (mealBtn) {
+    openEditModal(mealBtn.dataset);
+    return;
+  }
+  
+  const planBtn = e.target.closest('.btn-edit-plan');
+  if (planBtn) {
+    openEditPlanModal(planBtn.dataset);
+    return;
+  }
+});
+
+function switchTab(e, tabId) {
+  e.preventDefault();
+  document.querySelectorAll('.menu-tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab-link').forEach(el => {
+    el.classList.remove('active');
+    el.style.color = 'var(--text-muted)';
+    el.style.borderBottom = 'none';
+  });
+  document.getElementById('tab-' + tabId).style.display = 'block';
+  e.currentTarget.classList.add('active');
+  e.currentTarget.style.color = 'var(--orange)';
+  e.currentTarget.style.borderBottom = '2px solid var(--orange)';
+}
+</script>
+{% endblock %}

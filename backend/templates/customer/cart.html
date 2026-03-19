@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}My Cart{% endblock %}
+
+{% block body %}
+<nav class="navbar">
+  <div style="display:flex;align-items:center;gap:var(--space-4)">
+    <a href="/customer/home" style="color:white;text-decoration:none;font-size:var(--sm);font-weight:600"><i class="fa fa-arrow-left"></i> CONTINUE SHOPPING</a>
+    <a href="/customer/home" class="navbar-brand" style="margin-left:var(--space-4)">Digi<span>Bhoj</span></a>
+  </div>
+</nav>
+
+<main class="container page-enter" style="padding:var(--space-10) 0;max-width:900px">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <h1 style="margin-bottom:0">Your Cart</h1>
+      <p>{{ cart_count }} items</p>
+    </div>
+    {% if items %}
+    <a href="/customer/checkout" class="btn btn-primary btn-lg">Checkout (₹{{ total|int }}) <i class="fa fa-arrow-right"></i></a>
+    {% endif %}
+  </div>
+
+  {% if not items %}
+    <div class="empty-state">
+      <i class="fa fa-shopping-basket" style="font-size:4rem;color:var(--border);margin-bottom:var(--space-4)"></i>
+      <h3 style="margin-bottom:var(--space-2)">Your cart is empty</h3>
+      <p style="color:var(--text-muted);margin-bottom:var(--space-6)">Looks like you haven't added any meals yet.</p>
+      <a href="/customer/home" class="btn btn-primary btn-xl">Browse Providers</a>
+    </div>
+  {% else %}
+    <div class="section-card">
+      <div style="display:flex;flex-direction:column">
+        {% for item in items %}
+        <div class="cart-item-row">
+          <img src="{{ item.meal.image_url or '/assets/images/meal-default.jpg' }}" onerror="this.src='/assets/images/meal-default.jpg'" style="width:120px;height:120px;object-fit:cover;border-radius:var(--radius)">
+          
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <h3 style="font-size:1.1rem;margin-bottom:var(--space-1)">{{ item.meal.name }}</h3>
+                <div style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-2)">
+                  Provider: {{ item.meal.provider.mess_name }}
+                </div>
+                <div style="font-size:1.1rem;font-weight:700;color:var(--brand-primary-dark)">₹{{ item.meal.price|int }}</div>
+              </div>
+              <div style="font-size:1.1rem;font-weight:700">₹{{ (item.meal.price * item.quantity)|int }}</div>
+            </div>
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-4);flex-wrap:wrap;gap:var(--space-4)">
+              <div class="qty-control" style="border:1px solid var(--border)">
+                <form action="/customer/action/cart/update" method="POST" style="margin:0">
+                  <input type="hidden" name="item_id" value="{{ item.id }}">
+                  <input type="hidden" name="action" value="decrease">
+                  <button type="submit" class="qty-btn">-</button>
+                </form>
+                <span class="qty-value">{{ item.quantity }}</span>
+                <form action="/customer/action/cart/update" method="POST" style="margin:0">
+                  <input type="hidden" name="item_id" value="{{ item.id }}">
+                  <input type="hidden" name="action" value="increase">
+                  <button type="submit" class="qty-btn">+</button>
+                </form>
+              </div>
+              
+              <form action="/customer/action/cart/update" method="POST">
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                <input type="hidden" name="action" value="remove">
+                <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)"><i class="fa fa-trash"></i> Remove</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      
+      <div style="margin-top:var(--space-6);padding-top:var(--space-6);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:var(--h4);font-weight:700">Total Amount</div>
+        <div style="font-size:var(--h2);font-weight:800;color:var(--brand-primary-dark)">₹{{ total|int }}</div>
+      </div>
+    </div>
+    
+    <div style="text-align:right;margin-top:var(--space-6)">
+      <a href="/customer/checkout" class="btn btn-primary btn-xl">Proceed to Checkout <i class="fa fa-arrow-right"></i></a>
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

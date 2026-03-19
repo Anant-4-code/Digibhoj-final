@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Rider Profile{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <a href="/delivery/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Rider</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-motorcycle"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="sidebar">
+    <div class="sidebar-section">Rider Actions</div>
+    <a href="/delivery/dashboard" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Active Tasks
+    </a>
+    
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/delivery/profile" class="sidebar-item active">
+      <i class="fa fa-user-circle"></i> Profile & Vehicle
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1>Rider Profile</h1>
+      <p>Manage your vehicle details and service area</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:var(--space-8)">
+      
+      <!-- Info Card -->
+      <div class="section-card" style="align-self:start;text-align:center">
+        <div class="avatar avatar-xl" style="margin:0 auto var(--space-4);background:#fff3e0;color:var(--orange)">
+          <i class="fa fa-user-tie"></i>
+        </div>
+        <h2 style="margin-bottom:var(--space-1)">{{ user.name }}</h2>
+        <div style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">
+          <div class="status-badge status-{{ agent.verification_status.value }}" style="margin-top:var(--space-2)">
+            Account {{ agent.verification_status.value|title }}
+          </div>
+        </div>
+        
+        <!-- Availability Toggle -->
+        <form action="/delivery/action/availability/toggle" method="POST" style="margin-bottom:var(--space-6);padding:var(--space-4);background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)">
+          <div style="font-size:var(--sm);font-weight:600;margin-bottom:var(--space-2)">Current Status</div>
+          <button type="submit" class="btn {% if agent.availability.value == 'available' %}btn-primary{% else %}btn-outline{% endif %} btn-full" style="{% if agent.availability.value == 'available' %}background:#00e676;border-color:#00e676{% endif %}">
+            <i class="fa fa-power-off"></i> {% if agent.availability.value == 'available' %}Go Offline{% else %}Go Online{% endif %}
+          </button>
+        </form>
+        
+        <div style="text-align:left;font-size:var(--sm)">
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Member Since</strong>
+            {{ user.created_at.strftime('%B %Y') if user.created_at else 'N/A' }}
+          </div>
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Lifetime Earnings</strong>
+            ₹{{ agent.total_earnings|int }}
+          </div>
+        </div>
+        
+        <a href="/logout" class="btn btn-outline btn-full" style="color:var(--red);border-color:var(--red);margin-top:var(--space-6)">
+          <i class="fa fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+
+      <!-- Settings Form -->
+      <div class="section-card">
+        <h3 class="section-card-title">Vehicle & Area Details</h3>
+        
+        <form action="/delivery/action/profile/update" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" class="form-control" value="{{ agent.phone }}" required>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+            <div class="form-group">
+              <label class="form-label" for="vehicle_type">Vehicle Type</label>
+              <select id="vehicle_type" name="vehicle_type" class="form-control" required>
+                <option value="Bike" {% if agent.vehicle_type == 'Bike' %}selected{% endif %}>Bike</option>
+                <option value="Scooter" {% if agent.vehicle_type == 'Scooter' %}selected{% endif %}>Scooter</option>
+                <option value="Cycle" {% if agent.vehicle_type == 'Cycle' %}selected{% endif %}>Cycle</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="license_number">License Number</label>
+              <input type="text" id="license_number" name="license_number" class="form-control" value="{{ agent.license_number }}" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="service_area">Preferred Service Area</label>
+            <input type="text" id="service_area" name="service_area" class="form-control" value="{{ agent.service_area }}" required>
+            <p style="font-size:var(--xs);color:var(--text-muted);margin-top:var(--space-1)"><i class="fa fa-info-circle"></i> E.g., Kothrud, Baner, Wakad.</p>
+          </div>
+          
+          <button type="submit" class="btn btn-primary" style="margin-top:var(--space-4);background:var(--orange)">Update Rider Profile</button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+</div>
+{% endblock %}

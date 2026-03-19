@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Provider Analytics{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-store"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Management</div>
+    <a href="/provider/dashboard" class="sidebar-item">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/provider/menu" class="sidebar-item">
+      <i class="fa fa-utensils"></i> My Menu
+    </a>
+    <a href="/provider/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/provider/delivery" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Assign Delivery
+    </a>
+    <a href="/provider/analytics" class="sidebar-item active">
+      <i class="fa fa-chart-bar"></i> Analytics
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1>Analytics & Earnings</h1>
+      <p>Overview of your business performance</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-icon"><i class="fa fa-wallet"></i></div>
+        <div class="stat-value count-up" data-prefix="₹">{{ total_revenue|int }}</div>
+        <div class="stat-label">Total Earnings</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-icon"><i class="fa fa-receipt"></i></div>
+        <div class="stat-value count-up">{{ total_orders }}</div>
+        <div class="stat-label">Total Orders Completed</div>
+      </div>
+      <div class="stat-card yellow">
+        <div class="stat-icon"><i class="fa fa-star"></i></div>
+        <div class="stat-value">{{ provider.rating|default(0.0) }}</div>
+        <div class="stat-label">Average Rating</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="section-card" style="margin-top:var(--space-8)">
+      <h3 class="section-card-title">Earnings History (Past 7 Days)</h3>
+      <div style="height:350px;width:100%;padding-top:var(--space-4)">
+        <canvas id="earningsChart"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('earningsChart').getContext('2d');
+  
+  // Create gradient
+  let gradient = ctx.createLinearGradient(0, 0, 0, 350);
+  gradient.addColorStop(0, 'rgba(243, 154, 31, 0.8)'); // var(--orange)
+  gradient.addColorStop(1, 'rgba(243, 154, 31, 0.2)');
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [{
+        label: 'Earnings (₹)',
+        data: [400, 600, 450, 800, 1000, 1200, 1100],
+        backgroundColor: gradient,
+        borderRadius: 4,
+        borderWidth: 0,
+        barPercentage: 0.6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1E293B',
+          padding: 12,
+          titleFont: { family: 'Inter', size: 14 },
+          bodyFont: { family: 'Inter', size: 14 },
+          callbacks: {
+            label: function(context) {
+              return '₹' + context.parsed.y;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0,0,0,0.05)',
+            drawBorder: false
+          },
+          ticks: {
+            font: { family: 'Inter', size: 12 },
+            color: '#64748b',
+            callback: function(value) {
+              return '₹' + value;
+            }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Inter', size: 12, weight: '600' },
+            color: '#475569'
+          }
+        }
+      },
+      animation: {
+        y: {
+          duration: 1000,
+          easing: 'easeOutQuart'
+        }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

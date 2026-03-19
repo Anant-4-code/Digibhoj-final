@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+
+{% block body %}
+<nav class="navbar" style="background:white;border-bottom:1px solid var(--border)">
+  <div style="display:flex;align-items:center;gap:var(--space-4)">
+    <a href="/customer/cart" style="color:var(--text)"><i class="fa fa-arrow-left"></i> Back to Cart</a>
+    <h1 style="font-size:1.2rem;margin:0;font-weight:700">Checkout</h1>
+  </div>
+  <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+</nav>
+
+<main class="container page-enter" style="padding:var(--space-10) 0;max-width:1100px">
+  <div class="checkout-layout">
+    
+    <!-- Checkout Form -->
+    <div>
+      <h2 style="margin-bottom:var(--space-6)">Delivery Details</h2>
+      
+      <form action="/customer/action/checkout" method="POST" id="checkoutForm">
+        <div class="section-card">
+          <h3 class="section-card-title">1. Delivery Address</h3>
+          <div class="floating-group">
+            <textarea name="delivery_address" id="delivery_address" class="floating-input" required style="min-height:120px">{{ address }}</textarea>
+            <label for="delivery_address" class="floating-label">Full Delivery Address</label>
+          </div>
+          <p style="font-size:var(--xs);color:var(--text-muted)"><i class="fa fa-info-circle"></i> Make sure to include landmarks for faster delivery.</p>
+        </div>
+        
+        <div class="section-card">
+          <h3 class="section-card-title">2. Payment Method</h3>
+          
+          <div style="display:grid;gap:var(--space-4)">
+            <label style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);border:2px solid var(--brand-primary);border-radius:var(--radius);cursor:pointer;background:var(--brand-shadow)">
+              <input type="radio" name="payment_method" value="Cash" checked>
+              <div>
+                <div style="font-weight:700;margin-bottom:4px"><i class="fa fa-money-bill-wave" style="color:var(--brand-primary)"></i> Cash on Delivery (COD)</div>
+                <div style="font-size:var(--sm);color:var(--text-muted)">Pay when your food arrives</div>
+              </div>
+            </label>
+            
+            <label style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer" onclick="alert('Online payment will be implemented via UPI/Gateway in production.')">
+              <input type="radio" name="payment_method" value="UPI" disabled>
+              <div style="opacity:0.6">
+                <div style="font-weight:700;margin-bottom:4px"><i class="fa fa-qrcode" style="color:var(--orange)"></i> UPI / Online Payment</div>
+                <div style="font-size:var(--sm);color:var(--text-muted)">Currently unavailable</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Order Summary -->
+    <div>
+      <div class="section-card" style="position:sticky;top:var(--space-4);background:var(--card-bg);border:2px solid var(--brand-primary-light)">
+        <h3 class="section-card-title">Order Summary</h3>
+        
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-6);max-height:300px;overflow-y:auto">
+          {% for item in items %}
+          <div style="display:flex;justify-content:space-between;font-size:var(--sm)">
+            <div>
+              <span style="font-weight:600">{{ item.quantity }}x</span> {{ item.meal.name }}
+            </div>
+            <span>₹{{ (item.quantity * item.meal.price)|int }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        
+        <div style="border-top:1px dashed var(--border);padding-top:var(--space-4);margin-bottom:var(--space-4)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);color:var(--text-muted);font-size:var(--sm)">
+            <span>Subtotal</span>
+            <span>₹{{ total|int }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2);color:var(--text-muted);font-size:var(--sm)">
+            <span>Delivery Fee</span>
+            <span>Free</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--h3);font-weight:800;color:var(--brand-primary-dark);margin-top:var(--space-4)">
+            <span>Total</span>
+            <span>₹{{ total|int }}</span>
+          </div>
+        </div>
+        
+        <button type="button" class="btn btn-primary btn-xl btn-full magnetic" onclick="document.getElementById('checkoutForm').submit()">
+          Place Order <i class="fa fa-paper-plane"></i>
+        </button>
+        <p style="text-align:center;font-size:var(--xs);color:var(--text-muted);margin-top:var(--space-4)">
+          By placing this order, you agree to our Terms of Service.
+        </p>
+      </div>
+    </div>
+    
+  </div>
+</main>
+{% endblock %}

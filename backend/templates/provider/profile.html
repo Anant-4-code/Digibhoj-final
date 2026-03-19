@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Provider Profile{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-store"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Management</div>
+    <a href="/provider/dashboard" class="sidebar-item">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/provider/menu" class="sidebar-item">
+      <i class="fa fa-utensils"></i> My Menu
+    </a>
+    <a href="/provider/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/provider/delivery" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Assign Delivery
+    </a>
+    <a href="/provider/analytics" class="sidebar-item">
+      <i class="fa fa-chart-bar"></i> Analytics
+    </a>
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/provider/profile" class="sidebar-item active">
+      <i class="fa fa-user-circle"></i> Profile
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1>Provider Profile</h1>
+      <p>Manage your mess information and business details</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:var(--space-8)">
+      
+      <!-- Store Info Card -->
+      <div class="section-card" style="align-self:start;text-align:center">
+        <div class="avatar avatar-xl" style="margin:0 auto var(--space-4);background:rgba(243,154,31,0.15);color:var(--orange)">
+          <i class="fa fa-store"></i>
+        </div>
+        <h2 style="margin-bottom:var(--space-1)">{{ provider.mess_name }}</h2>
+        <div style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">
+          <div class="status-badge status-{{ provider.verification_status.value }}" style="margin-top:var(--space-2)">
+            Provider {{ provider.verification_status.value|title }}
+          </div>
+        </div>
+        
+        <div style="text-align:left;font-size:var(--sm)">
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Owner Name</strong>
+            {{ user.name }}
+          </div>
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Email</strong>
+            {{ user.email }}
+          </div>
+          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
+            <strong style="color:var(--text-muted);display:block">Member Since</strong>
+            {{ user.created_at.strftime('%B %Y') if user.created_at else 'N/A' }}
+          </div>
+        </div>
+        
+        <a href="/logout" class="btn btn-outline btn-full" style="color:var(--red);border-color:var(--red);margin-top:var(--space-6)">
+          <i class="fa fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+
+      <!-- Settings Form -->
+      <div class="section-card">
+        <h3 class="section-card-title">Business Settings</h3>
+        
+        <form action="/provider/action/profile/update" method="POST">
+          <div class="form-group">
+            <label class="form-label" for="mess_name">Mess Name</label>
+            <input type="text" id="mess_name" name="mess_name" class="form-control" value="{{ provider.mess_name }}" required>
+          </div>
+          
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone Number</label>
+              <input type="tel" id="phone" name="phone" class="form-control" value="{{ provider.phone }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="cuisine_type">Cuisine Type</label>
+              <input type="text" id="cuisine_type" name="cuisine_type" class="form-control" value="{{ provider.cuisine_type }}" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="operating_hours">Operating Hours</label>
+            <input type="text" id="operating_hours" name="operating_hours" class="form-control" value="{{ provider.operating_hours }}" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="location">Business Address & Location</label>
+            <textarea id="location" name="location" class="form-control" rows="2" required>{{ provider.location }}</textarea>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" for="description">About the Mess</label>
+            <textarea id="description" name="description" class="form-control" rows="4">{{ provider.description }}</textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-primary" style="margin-top:var(--space-4)">Save Business Details</button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+</div>
+{% endblock %}

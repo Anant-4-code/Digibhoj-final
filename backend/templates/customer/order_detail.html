@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+
+{% block body %}
+<nav class="navbar" style="background:white;border-bottom:1px solid var(--border)">
+  <div style="display:flex;align-items:center;gap:var(--space-4)">
+    <a href="/customer/orders" style="color:var(--text)"><i class="fa fa-arrow-left"></i> Back to Orders</a>
+    <h1 style="font-size:1.2rem;margin:0;font-weight:700">Order #{{ order.id }}</h1>
+  </div>
+  <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+</nav>
+
+<main class="container page-enter" style="padding:var(--space-10) 0;max-width:800px">
+  
+  {% if success %}
+  <div class="alert-box alert-success" style="margin-bottom:var(--space-8)">
+    <i class="fa fa-check-circle" style="font-size:1.5rem"></i>
+    <div>
+      <div style="font-weight:700;font-size:1.1rem;margin-bottom:2px">Order Placed Successfully!</div>
+      <div style="font-size:var(--sm)">The provider has received your order and it's currently awaiting confirmation.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-8)">
+      <div>
+        <h2 style="margin-bottom:var(--space-1)">Provider: {{ order.provider.mess_name }}</h2>
+        <div style="color:var(--text-muted);font-size:var(--sm)">
+          Ordered on {{ order.created_at.strftime('%d %b %Y, %I:%M %p') if order.created_at else 'N/A' }}
+        </div>
+      </div>
+      <div>
+        <div class="status-badge status-{{ order.order_status.value }}">{{ order.order_status.value|replace('_', ' ')|title }}</div>
+      </div>
+    </div>
+
+    <!-- Timeline Progress -->
+    {% set s = order.order_status.value %}
+    <div class="status-progress">
+      <div class="status-step {% if s in ['created','confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s == 'created' %}active{% endif %}">
+        <div class="step-circle"><i class="fa fa-file-invoice"></i></div>
+        <div class="step-label">Placed</div>
+      </div>
+      <div class="status-step {% if s in ['confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s == 'confirmed' %}active{% endif %}">
+        <div class="step-circle"><i class="fa fa-check"></i></div>
+        <div class="step-label">Confirmed</div>
+      </div>
+      <div class="status-step {% if s in ['preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s in ['preparing','ready'] %}active{% endif %}">
+        <div class="step-circle"><i class="fa fa-fire-burner"></i></div>
+        <div class="step-label">Preparing</div>
+      </div>
+      <div class="status-step {% if s in ['picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s in ['picked_up','out_for_delivery'] %}active{% endif %}">
+        <div class="step-circle"><i class="fa fa-motorcycle"></i></div>
+        <div class="step-label">On the Way</div>
+      </div>
+      <div class="status-step {% if s in ['delivered','completed'] %}done{% endif %} {% if s == 'delivered' %}active{% endif %}">
+        <div class="step-circle"><i class="fa fa-box-open"></i></div>
+        <div class="step-label">Delivered</div>
+      </div>
+    </div>
+    
+    {% if s in ['picked_up','out_for_delivery'] %}
+    <div id="live-tracking-section" style="margin-top:var(--space-6);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);position:relative">
+      <div style="padding:var(--space-4) var(--space-6);background:white;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Live Tracking</div>
+        <div class="badge badge-brand" style="font-size:10px;animation: pulse 2s infinite">LIVE</div>
+      </div>
+      <div id="live-tracking-map" style="width:100%;height:300px;background:#eee"></div>
+      <div style="padding:var(--space-3) var(--space-6);background:white;font-size:var(--xs);color:var(--text-muted)">
+        <i class="fa fa-info-circle"></i> Rider is moving towards your location
+      </div>
+    </div>
+    {% endif %}
+
+    {% if s in ['cancelled', 'failed'] %}
+    <div class="alert-box alert-error" style="margin-top:var(--space-6)">
+      <i class="fa fa-times-circle"></i> This order was cancelled or failed.
+    </div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-top:var(--space-6)">
+    
+    <!-- Items List -->
+    <div class="section-card">
+      <h3 class="section-card-title">Order Items</h3>
+      <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+        {% for item in order.order_items %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--space-4);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:var(--space-3)">
+            <span class="badge {{ 'badge-veg' if item.meal.is_veg else 'badge-nonveg' }}" style="padding:4px;width:20px;height:20px;display:flex;justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span></span>
+            <div>
+              <div style="font-weight:600;font-size:var(--sm)">{{ item.meal.name }}</div>
+              <div style="font-size:var(--xs);color:var(--text-muted)">Qty: {{ item.quantity }} × ₹{{ item.unit_price|int }}</div>
+            </div>
+          </div>
+          <div style="font-weight:700">₹{{ (item.quantity * item.unit_price)|int }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:var(--space-4);padding-top:var(--space-4)">
+        <div style="font-weight:600;color:var(--text-muted)">Total Paid</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--green-dark)">₹{{ order.total_price|int }}</div>
+      </div>
+    </div>
+    
+    <!-- Delivery Details -->
+    <div class="section-card">
+      <h3 class="section-card-title">Delivery Details</h3>
+      
+      <div style="margin-bottom:var(--space-6)">
+        <div style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-1)">Delivery Address</div>
+        <div style="font-weight:500;line-height:1.5"><i class="fa fa-map-marker-alt" style="color:var(--orange);margin-right:8px"></i> {{ order.delivery_address }}</div>
+      </div>
+      
+      <div style="margin-bottom:var(--space-6)">
+        <div style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-1)">Payment Mode</div>
+        <div style="font-weight:500"><i class="fa fa-money-bill-wave" style="color:var(--green);margin-right:8px"></i> {{ order.payment_method }}</div>
+        <div class="badge badge-green" style="margin-top:var(--space-1);font-size:10px">{{ order.payment_status.value|title }}</div>
+      </div>
+
+      {% if order.delivery_assignment and order.delivery_assignment[0] %}
+      <div style="padding-top:var(--space-4);border-top:1px solid var(--border)">
+        <div style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-3)">Delivery Partner</div>
+        <div style="display:flex;align-items:center;gap:var(--space-4)">
+          <div class="avatar avatar-lg">{{ order.delivery_assignment[0].agent.user.name[0] }}</div>
+          <div>
+            <div style="font-weight:700">{{ order.delivery_assignment[0].agent.user.name }}</div>
+            <div style="font-size:var(--sm);color:var(--text-muted)"><i class="fa fa-motorcycle"></i> {{ order.delivery_assignment[0].agent.vehicle_type }} • {{ order.delivery_assignment[0].agent.license_number }}</div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+        {% if s in ['created','confirmed','preparing'] %}
+        <div style="padding-top:var(--space-4);border-top:1px dashed var(--border)">
+          <div style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-3)">Delivery Partner</div>
+          <div style="display:flex;align-items:center;gap:var(--space-3);color:var(--orange)">
+            <i class="fa fa-clock fa-spin"></i> Waiting for agent assignment...
+          </div>
+        </div>
+        {% endif %}
+      {% endif %}
+      
+    </div>
+    
+  </div>
+  
+  {% if s == 'delivered' %}
+  <div style="text-align:center;margin-top:var(--space-8)">
+    <button class="btn btn-primary btn-xl" onclick="document.getElementById('reviewModal').classList.add('open')">
+      <i class="fa fa-star"></i> Rate Your Meal
+    </button>
+  </div>
+  {% endif %}
+</main>
+
+<!-- Review Modal (Placeholder UI) -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title">Rate Your Order</h3>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <form action="/customer/action/order/review" method="POST">
+      <input type="hidden" name="order_id" value="{{ order.id }}">
+      <div style="text-align:center;font-size:3rem;color:var(--border);margin-bottom:var(--space-6);cursor:pointer;" id="starRating">
+        <span onclick="setRating(1)">★</span><span onclick="setRating(2)">★</span><span onclick="setRating(3)">★</span><span onclick="setRating(4)">★</span><span onclick="setRating(5)">★</span>
+      </div>
+      <input type="hidden" name="rating" id="ratingValue" value="0">
+      <div class="floating-group">
+        <textarea name="comment" id="comment" class="floating-input" placeholder=" "></textarea>
+        <label for="comment" class="floating-label">Share your feedback</label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-xl btn-full">Submit Review</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function setRating(n) {
+    document.getElementById('ratingValue').value = n;
+    const stars = document.getElementById('starRating').children;
+    for (let i = 0; i < stars.length; i++) {
+      stars[i].style.color = (i < n) ? '#FFB23F' : 'var(--border)';
+    }
+  }
+
+  // Basic modal closer for this page if not handled globally
+  document.querySelectorAll('[data-modal-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('reviewModal').classList.remove('open');
+    });
+  });
+</script>
+
+{% if s in ['picked_up','out_for_delivery'] %}
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCHcy-Q_QUtr47GktdKg7UNvvRKKYOpxE&libraries=geometry,marker,routes"></script>
+<script src="/assets/js/customer-tracking.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.google && window.google.maps) {
+      window.customerTracker = new CustomerTracker('{{ order.id }}', 'AIzaSyDCHcy-Q_QUtr47GktdKg7UNvvRKKYOpxE', '{{ order.provider.location }}', '{{ order.delivery_address }}');
+    }
+  });
+</script>
+{% endif %}
+
+{% endblock %}

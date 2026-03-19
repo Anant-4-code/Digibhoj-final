@@ -1,0 +1,156 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Entity Verifications</h1>
+        <p class="page-desc">Review submitted documents and approve or reject Providers and Delivery Agents.</p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 24px;">
+    <h2 class="page-title" style="font-size:1.4rem;margin-bottom:16px;">Mess Providers</h2>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mess Name</th>
+                    <th>Owner</th>
+                    <th>Location</th>
+                    <th>Cuisine</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="providers-body">
+                <tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted)">Loading providers...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="page-title" style="font-size:1.4rem;margin-bottom:16px;">Delivery Partners</h2>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Vehicle</th>
+                    <th>License No.</th>
+                    <th>Area</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="delivery-body">
+                <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">Loading delivery agents...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function loadVerifications() {
+        try {
+            // Load Providers
+            const pRes = await fetch('/api/admin/providers');
+            if(pRes.ok) {
+                const providers = await pRes.json();
+                const tbody = document.getElementById('providers-body');
+                tbody.innerHTML = '';
+                
+                if (providers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted)">No providers mapped.</td></tr>';
+                }
+
+                providers.forEach(p => {
+                    const stat = p.verification_status;
+                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' : 
+                                      stat === 'blocked' ? '<span class="badge danger">Rejected</span>' : 
+                                      '<span class="badge warning">Pending</span>';
+                    
+                    const actions = stat === 'pending' 
+                        ? `<button class="btn btn-sm btn-primary" onclick="verifyProvider(${p.id})"><i class="fa fa-check"></i> Approve</button>
+                           <button class="btn btn-sm btn-danger" onclick="rejectProvider(${p.id})"><i class="fa fa-xmark"></i> Reject</button>`
+                        : `<button class="btn btn-sm btn-outline" disabled>Action Taken</button>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${p.mess_name}</strong></td>
+                        <td>${p.owner_name}</td>
+                        <td>${p.location}</td>
+                        <td>${p.cuisine_type}</td>
+                        <td>${statusBadge}</td>
+                        <td style="display:flex;gap:8px;">${actions} <button class="btn btn-icon btn-outline" title="Inspect Documents"><i class="fa fa-file-contract"></i></button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Load Delivery
+            const dRes = await fetch('/api/admin/delivery');
+            if(dRes.ok) {
+                const agents = await dRes.json();
+                const tbody = document.getElementById('delivery-body');
+                tbody.innerHTML = '';
+
+                if (agents.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">No delivery agents mapped.</td></tr>';
+                }
+
+                agents.forEach(a => {
+                    const stat = a.verification_status;
+                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' : 
+                                      '<span class="badge warning">Pending</span>';
+                    
+                    const actions = stat === 'pending' 
+                        ? `<button class="btn btn-sm btn-primary" onclick="verifyAgent(${a.id})"><i class="fa fa-check"></i> Approve</button>`
+                        : `<button class="btn btn-sm btn-outline" disabled>Verified</button>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${a.name}</strong></td>
+                        <td>${a.phone}</td>
+                        <td><span class="badge" style="background:rgba(30,136,229,0.1); color:#1e88e5">${a.vehicle_type}</span></td>
+                        <td>${a.license_number}</td>
+                        <td>${a.service_area}</td>
+                        <td>${statusBadge}</td>
+                        <td style="display:flex;gap:8px;">${actions} <button class="btn btn-icon btn-outline" title="Inspect License"><i class="fa fa-id-badge"></i></button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch(e) {
+            console.error("Fetch Error:", e);
+        }
+    }
+
+    async function verifyProvider(id) {
+        if(!confirm("Approve this provider for platform operations?")) return;
+        try {
+            const res = await fetch(`/api/admin/providers/verify/${id}`, { method: 'PUT' });
+            if(res.ok) { showToast("Provider Verified.", "success"); loadVerifications(); }
+        } catch(e) { showToast("Error connecting.", "error"); }
+    }
+
+    async function rejectProvider(id) {
+        if(!confirm("Reject this provider application?")) return;
+        try {
+            const res = await fetch(`/api/admin/providers/reject/${id}`, { method: 'PUT' });
+            if(res.ok) { showToast("Provider Application Rejected.", "success"); loadVerifications(); }
+        } catch(e) { showToast("Error connecting.", "error"); }
+    }
+
+    async function verifyAgent(id) {
+        if(!confirm("Verify this delivery partner?")) return;
+        try {
+            const res = await fetch(`/api/admin/delivery/verify/${id}`, { method: 'PUT' });
+            if(res.ok) { showToast("Delivery Agent Verified.", "success"); loadVerifications(); }
+        } catch(e) { showToast("Error connecting.", "error"); }
+    }
+
+    loadVerifications();
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Explore Providers{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+    </div>
+    
+    <div class="search-bar" style="max-width:400px;width:100%;margin:0 var(--space-4)">
+      <i class="fa fa-search"></i>
+      <form action="/customer/home" method="GET" style="flex:1" id="searchForm">
+        <input type="text" name="q" placeholder="Search mess names..." value="{{ q or '' }}" style="width:100%" onchange="document.getElementById('searchForm').submit()">
+        {% if cuisine %}
+        <input type="hidden" name="cuisine" value="{{ cuisine }}">
+        {% endif %}
+      </form>
+    </div>
+
+    <div class="navbar-actions">
+      <!-- Notifications -->
+      <div class="dropdown" data-dropdown style="margin-right:var(--space-2)">
+        <div class="cart-badge" style="color:white;font-size:1.2rem;cursor:pointer" data-dropdown-trigger>
+          <i class="fa-regular fa-bell"></i>
+          <span class="count" style="background:var(--red);top:-8px;right:-8px">3</span>
+        </div>
+        <div class="dropdown-menu" style="width:300px;right:-10px;top:45px">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between">
+            Notifications <span style="font-size:10px;color:var(--orange);cursor:pointer">Mark all as read</span>
+          </div>
+          <div style="max-height:300px;overflow-y:auto">
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border);opacity:0.6">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">Order Delivered <i class="fa fa-check-circle text-green" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Your order from Annapurna Veg Mess has been delivered. Enjoy your meal!</div>
+            </a>
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">New Message <i class="fa fa-envelope text-orange" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">The delivery provider has arrived at the location.</div>
+            </a>
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">Welcome to DigiBhoj ✨</div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Explore the best mess providers around you.</div>
+            </a>
+          </div>
+          <a href="#" class="dropdown-item" style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View All</a>
+        </div>
+      </div>
+
+      <a href="/customer/cart" class="cart-badge" style="color:white;font-size:1.2rem;margin-right:var(--space-4)">
+        <i class="fa fa-shopping-cart"></i>
+        {% if cart_count > 0 %}<span class="count">{{ cart_count }}</span>{% endif %}
+      </a>
+      
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px">{{ user.name[0]|upper }}</div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/customer/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
+          <a href="/customer/orders" class="dropdown-item"><i class="fa fa-list-alt"></i> My Orders</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Menu</div>
+    <a href="/customer/home" class="sidebar-item active">
+      <i class="fa fa-home"></i> Explore
+    </a>
+    <a href="/customer/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/customer/profile" class="sidebar-item">
+      <i class="fa fa-user"></i> Profile
+    </a>
+    
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Filters</div>
+    <div style="padding:0 var(--space-4) var(--space-4)">
+      <form action="/customer/home" method="GET">
+        {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+        
+        <div style="margin-bottom:var(--space-4)">
+          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Cuisine</label>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
+              <input type="radio" name="cuisine" value="" {% if not cuisine %}checked{% endif %}> All
+            </label>
+            {% for c in ['North Indian', 'South Indian', 'Maharashtrian', 'Gujarati', 'Punjabi', 'Multi-Cuisine'] %}
+            <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
+              <input type="radio" name="cuisine" value="{{ c }}" {% if cuisine == c %}checked{% endif %}> {{ c }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <div style="margin-bottom:var(--space-4)">
+          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Rating</label>
+          <select name="rating" class="form-control" style="font-size:var(--sm);padding:6px">
+            <option value="">Any Rating</option>
+            <option value="4" {% if request.query_params.get('rating') == '4' %}selected{% endif %}>4.0+ Stars</option>
+            <option value="3" {% if request.query_params.get('rating') == '3' %}selected{% endif %}>3.0+ Stars</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:var(--space-6)">
+          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Dietary</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
+            <input type="checkbox" name="veg_only" value="true" {% if request.query_params.get('veg_only') %}checked{% endif %}> Pure Veg
+          </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full" style="padding:8px;font-size:var(--sm)">Apply Filters</button>
+        {% if cuisine or request.query_params.get('rating') or request.query_params.get('veg_only') %}
+        <a href="/customer/home{% if q %}?q={{ q }}{% endif %}" class="btn btn-outline btn-full" style="margin-top:8px;padding:8px;font-size:var(--sm);text-align:center">Clear All</a>
+        {% endif %}
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1>Discover Home Food</h1>
+      <p>Find the best local mess and tiffin services around you</p>
+    </div>
+
+    <!-- Tag Scroller -->
+    <div class="tag-scroller">
+      <a href="/customer/home" class="tag-item {% if not cuisine and not request.query_params.get('rating') and not request.query_params.get('veg_only') %}active{% endif %}">
+        <i class="fa fa-th-large"></i> All
+      </a>
+      <a href="/customer/home?veg_only=true" class="tag-item {% if request.query_params.get('veg_only') %}active{% endif %}">
+        <i class="fa fa-leaf text-green"></i> Pure Veg
+      </a>
+      <a href="/customer/home?rating=4" class="tag-item {% if request.query_params.get('rating') == '4' %}active{% endif %}">
+        <i class="fa fa-star text-yellow"></i> Top Rated
+      </a>
+      <a href="/customer/home?cuisine=North+Indian" class="tag-item {% if cuisine == 'North Indian' %}active{% endif %}">
+        <i class="fa fa-utensils"></i> North Indian
+      </a>
+      <a href="/customer/home?cuisine=South+Indian" class="tag-item {% if cuisine == 'South Indian' %}active{% endif %}">
+        <i class="fa fa-bowl-rice"></i> South Indian
+      </a>
+      <a href="/customer/home?cuisine=Maharashtrian" class="tag-item {% if cuisine == 'Maharashtrian' %}active{% endif %}">
+        <i class="fa fa-fire"></i> Spicy
+      </a>
+    </div>
+
+    <!-- Active Filters Display -->
+    {% if q or cuisine %}
+    <div class="filter-pills" style="margin-bottom:var(--space-6)">
+      {% if q %}
+      <div class="badge badge-brand" style="font-size:var(--sm);padding:4px 12px">
+        Search: "{{ q }}"
+        <a href="/customer/home{% if cuisine %}?cuisine={{ cuisine }}{% endif %}" style="margin-left:8px;color:var(--text)"><i class="fa fa-times"></i></a>
+      </div>
+      {% endif %}
+      {% if cuisine %}
+      <div class="badge badge-orange" style="font-size:var(--sm);padding:4px 12px">
+        Cuisine: {{ cuisine }}
+        <a href="/customer/home{% if q %}?q={{ q }}{% endif %}" style="margin-left:8px;color:var(--text)"><i class="fa fa-times"></i></a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if providers %}
+    <div class="provider-grid">
+      {% for p in providers %}
+      <a href="/customer/provider/{{ p.id }}" class="provider-card card-tilt">
+        <div class="img-zoom">
+          <img src="{{ p.image_url or '/assets/images/provider-default.jpg' }}" onerror="this.src='/assets/images/provider-default.jpg'" alt="{{ p.mess_name }}" class="provider-card-img">
+        </div>
+        <div class="provider-card-body">
+          <h3 class="provider-card-title">{{ p.mess_name }}</h3>
+          <div class="provider-card-meta">
+            <span class="badge badge-gray" style="text-transform:none"><i class="fa fa-utensils"></i> {{ p.cuisine_type }}</span>
+          </div>
+          <div style="margin-top:var(--space-2);color:var(--text-muted);font-size:var(--xs)">
+            <i class="fa fa-map-marker-alt" style="color:var(--orange)"></i> {{ p.location }}
+          </div>
+          
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px dashed var(--border)">
+            <div>
+              <span class="stars">{% for i in range((p.rating|default(0))|int) %}★{% endfor %}{% if (p.rating|default(0)) % 1 >= 0.5 %}½{% endif %}</span>
+              <span style="font-size:var(--xs);color:var(--text-muted)">({{ p.total_reviews|default(0) }})</span>
+            </div>
+            <span class="btn btn-secondary btn-sm" style="border-radius:4px">View Meals</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa fa-search"></i>
+      <h3>No providers found</h3>
+      <p>Try adjusting your search or filters to find what you're looking for.</p>
+      {% if q or cuisine %}
+      <a href="/customer/home" class="btn btn-primary" style="margin-top:var(--space-4)">Clear All Filters</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

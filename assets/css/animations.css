@@ -1,0 +1,599 @@
+/* ══════════════════════════════════════════════════
+   DIGIBHOJ – ANIMATIONS & EFFECTS
+   Cursor glow, card tilt, magnetic buttons,
+   scroll reveal, and other micro-interactions
+   ══════════════════════════════════════════════════ */
+
+/* ── Cursor Glow ─────────────────────────────────── */
+.cursor-glow {
+    position: fixed;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: var(--z-cursor);
+    background: radial-gradient(circle,
+        rgba(230, 57, 70, 0.06) 0%,
+        rgba(42, 157, 143, 0.03) 40%,
+        transparent 70%
+    );
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    mix-blend-mode: screen;
+}
+
+body:hover .cursor-glow { opacity: 1; }
+
+/* ── Card Tilt (3D) ──────────────────────────────── */
+.tilt-card {
+    perspective: 800px;
+    transform-style: preserve-3d;
+}
+
+.tilt-card-inner {
+    transition: transform 0.15s ease-out;
+    transform-style: preserve-3d;
+}
+
+.tilt-card:hover {
+    z-index: 2;
+}
+
+.tilt-card:hover .tilt-card-inner {
+    box-shadow: var(--shadow-lg);
+}
+
+/* ── Magnetic Button ─────────────────────────────── */
+.magnetic-btn {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform;
+}
+
+/* ── Hover Image Zoom ────────────────────────────── */
+.hover-zoom {
+    overflow: hidden;
+}
+
+.hover-zoom img {
+    transition: transform 0.5s ease;
+}
+
+.hover-zoom:hover img {
+    transform: scale(1.05);
+}
+
+/* ── Link Underline Slide ────────────────────────── */
+.link-slide {
+    position: relative;
+    display: inline-block;
+}
+
+.link-slide::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--color-primary);
+    transition: width 0.3s ease;
+}
+
+.link-slide:hover::after {
+    width: 100%;
+}
+
+/* ── Floating Animation (Hero food icons) ────────── */
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33%      { transform: translateY(-12px) rotate(3deg); }
+    66%      { transform: translateY(-6px) rotate(-2deg); }
+}
+
+.float-anim {
+    animation: float 4s ease-in-out infinite;
+}
+
+.float-anim:nth-child(2) { animation-delay: 0.5s; animation-duration: 4.5s; }
+.float-anim:nth-child(3) { animation-delay: 1s; animation-duration: 5s; }
+.float-anim:nth-child(4) { animation-delay: 1.5s; animation-duration: 3.5s; }
+.float-anim:nth-child(5) { animation-delay: 0.8s; animation-duration: 5.5s; }
+
+/* ── Gradient Animation (Backgrounds) ────────────── */
+@keyframes gradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.animated-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease infinite;
+}
+
+/* ── Counter Animation ───────────────────────────── */
+.counter-animate {
+    animation: countUp 0.5s ease forwards;
+    display: inline-block;
+}
+
+/* ── Cart Badge Bounce ───────────────────────────── */
+@keyframes cartBounce {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.4); }
+    60%  { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+.cart-badge-bounce {
+    animation: cartBounce 0.4s ease;
+}
+
+/* ── Notification Dot Pulse ──────────────────────── */
+@keyframes notifPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.6); }
+    100% { box-shadow: 0 0 0 10px rgba(230, 57, 70, 0); }
+}
+
+.notif-pulse {
+    animation: notifPulse 1.5s ease infinite;
+}
+
+/* ── Order Status Progress Bar ───────────────────── */
+.progress-track {
+    background: var(--color-border);
+    height: 4px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-success));
+    border-radius: var(--radius-full);
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Stagger Animation (for list items) ──────────── */
+.stagger-children > * {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.stagger-children > *:nth-child(1)  { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2)  { animation-delay: 0.10s; }
+.stagger-children > *:nth-child(3)  { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4)  { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(5)  { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6)  { animation-delay: 0.30s; }
+.stagger-children > *:nth-child(7)  { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8)  { animation-delay: 0.40s; }
+.stagger-children > *:nth-child(9)  { animation-delay: 0.45s; }
+.stagger-children > *:nth-child(10) { animation-delay: 0.50s; }
+.stagger-children > *:nth-child(11) { animation-delay: 0.55s; }
+.stagger-children > *:nth-child(12) { animation-delay: 0.60s; }
+
+/* ── Success Check Animation ─────────────────────── */
+@keyframes successCheck {
+    0%   { stroke-dashoffset: 60; }
+    100% { stroke-dashoffset: 0; }
+}
+
+.success-check-circle {
+    animation: scaleIn 0.3s ease;
+}
+
+.success-check-path {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+    animation: successCheck 0.4s ease 0.3s forwards;
+}
+
+/* ── Ripple Effect ───────────────────────────────── */
+.ripple-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.35);
+    transform: scale(0);
+    animation: rippleEffect 0.6s ease-out;
+    pointer-events: none;
+}
+
+@keyframes rippleEffect {
+    to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Slide-in from sides (for new order cards, etc.) */
+@keyframes slideInFromRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+.slide-in-right {
+    animation: slideInFromRight 0.4s ease forwards;
+}
+
+.slide-in-left {
+    animation: slideInFromLeft 0.4s ease forwards;
+}
+
+/* ── Confirmation Dialog ─────────────────────────── */
+.confirm-dialog {
+    text-align: center;
+    padding: var(--space-xl);
+}
+
+.confirm-dialog__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-lg);
+    font-size: 1.75rem;
+}
+
+.confirm-dialog__icon--danger {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+}
+
+.confirm-dialog__icon--warning {
+    background: var(--color-warning-bg);
+    color: #E69500;
+}
+
+.confirm-dialog__title {
+    font-size: var(--fs-h3);
+    margin-bottom: var(--space-sm);
+}
+
+.confirm-dialog__text {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xl);
+}
+
+.confirm-dialog__actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+}
+
+/* ── Particle Effect (Hero) ──────────────────────── */
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+@keyframes particleDrift {
+    0%   { transform: translate(0, 0) scale(1); opacity: 0.5; }
+    50%  { opacity: 0.8; }
+    100% { transform: translate(var(--drift-x, 50px), var(--drift-y, -80px)) scale(0.3); opacity: 0; }
+}
+/* ═══════════════════════════════════════════════════════════
+   HERO SECTION – Liquid Glass Effect
+   Three visual layers:
+     1. Background food image (blurred)
+     2. Canvas for liquid reveal
+     3. Foreground UI (brand + CTA buttons)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Section container ────────────────────────────────────── */
+.hero-liquid {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    min-height: 600px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0a;
+}
+
+/* ── Layer 1: Background food image ───────────────────────── */
+.hero-liquid__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+.hero-liquid__bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(8px) brightness(0.35) saturate(1.2); /* Slightly higher blur for thicker liquid */
+    transform: scale(1.1); /* Prevents white edge from blur & wobble */
+    animation: bgWaterWobble 12s ease-in-out infinite alternate;
+}
+
+@keyframes bgWaterWobble {
+    0% {
+        transform: scale(1.1) translate(0, 0) rotate(0deg);
+    }
+    33% {
+        transform: scale(1.12) translate(-1%, 1%) rotate(0.5deg);
+    }
+    66% {
+        transform: scale(1.15) translate(1%, -1%) rotate(-0.5deg);
+    }
+    100% {
+        transform: scale(1.1) translate(-0.5%, -0.5%) rotate(0.2deg);
+    }
+}
+
+/* ── Layer 2: Liquid canvas ───────────────────────────────── */
+.hero-liquid__canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none; /* Mouse events pass through to section */
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Layer 3: Foreground UI ───────────────────────────────── */
+.hero-liquid__foreground {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+    padding: 0 24px;
+    pointer-events: none; /* Allow mouse events through to hero */
+}
+
+/* Re-enable pointer events on interactive children */
+.hero-liquid__foreground a,
+.hero-liquid__foreground button {
+    pointer-events: all;
+}
+
+/* ── Brand ────────────────────────────────────────────────── */
+.hero-liquid__brand {
+    animation: heroFadeIn 1.2s ease-out;
+}
+
+.hero-liquid__title {
+    font-family: 'Outfit', 'Poppins', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin: 0;
+    line-height: 1;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.hero-liquid__title span {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7c948 50%, #ff6b35 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s ease-in-out infinite;
+}
+
+.hero-liquid__tagline {
+    font-family: 'Outfit', 'Poppins', sans-serif;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 8px 0 0;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+}
+
+/* ── Interaction hint ─────────────────────────────────────── */
+.hero-liquid__hint {
+    font-family: 'Outfit', 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: hintPulse 2.5s ease-in-out infinite;
+}
+
+.hero-liquid__hint i {
+    font-size: 1rem;
+    animation: hintWiggle 2s ease-in-out infinite;
+}
+
+/* ── CTA Buttons ──────────────────────────────────────────── */
+.hero-liquid__cta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: heroFadeUp 1.4s ease-out;
+}
+
+.hero-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border-radius: 60px;
+    text-decoration: none;
+    font-family: 'Outfit', 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #fff;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.35s ease;
+    cursor: pointer;
+}
+
+/* Glass morphism background */
+.hero-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 60px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+/* Gradient fills for each role */
+.hero-btn--find {
+    background: linear-gradient(135deg, #e63946 0%, #ff6b6b 100%);
+    box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
+}
+
+.hero-btn--provider {
+    background: linear-gradient(135deg, #1d8cf8 0%, #3f8efc 100%);
+    box-shadow: 0 4px 20px rgba(29, 140, 248, 0.35);
+}
+
+.hero-btn--delivery {
+    background: linear-gradient(135deg, #2dce89 0%, #26d0ce 100%);
+    box-shadow: 0 4px 20px rgba(45, 206, 137, 0.35);
+}
+
+.hero-btn:hover {
+    transform: translateY(-4px) scale(1.04);
+}
+
+.hero-btn--find:hover {
+    box-shadow: 0 8px 32px rgba(230, 57, 70, 0.55);
+}
+
+.hero-btn--provider:hover {
+    box-shadow: 0 8px 32px rgba(29, 140, 248, 0.55);
+}
+
+.hero-btn--delivery:hover {
+    box-shadow: 0 8px 32px rgba(45, 206, 137, 0.55);
+}
+
+.hero-btn__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.hero-btn__label {
+    white-space: nowrap;
+}
+
+/* ── Floating particles ───────────────────────────────────── */
+.hero-liquid__particles {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.hero-particle {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    animation: particleFloat linear infinite;
+}
+
+/* ── Keyframes ────────────────────────────────────────────── */
+@keyframes heroFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroFadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+
+@keyframes hintPulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 0.8; }
+}
+
+@keyframes hintWiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25%      { transform: rotate(12deg); }
+    75%      { transform: rotate(-12deg); }
+}
+
+@keyframes particleFloat {
+    from { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    to   { transform: translateY(-20vh) rotate(360deg); opacity: 0; }
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .hero-liquid {
+        min-height: 100svh;
+    }
+
+    .hero-liquid__foreground {
+        gap: 24px;
+        padding: 0 16px;
+    }
+
+    .hero-liquid__cta {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .hero-btn {
+        width: 260px;
+        justify-content: center;
+    }
+
+    .hero-liquid__hint {
+        font-size: 0.75rem;
+    }
+
+    /* On touch devices, show a touch hint */
+    .hero-liquid__hint i::before {
+        content: "\f25a"; /* fa-hand-pointer → same icon, still works */
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-liquid__title {
+        font-size: clamp(2.2rem, 12vw, 3.5rem);
+    }
+
+    .hero-btn {
+        padding: 12px 22px;
+        font-size: 0.9rem;
+        width: 240px;
+    }
+}

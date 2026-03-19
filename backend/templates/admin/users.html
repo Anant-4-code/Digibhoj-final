@@ -1,0 +1,121 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">User Management</h1>
+        <p class="page-desc">Complete administrative control over all platform users.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-body">
+                <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">Loading user database...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function loadUsers() {
+        try {
+            const res = await fetch('/api/admin/users');
+            if(res.ok) {
+                const users = await res.json();
+                const tbody = document.getElementById('users-body');
+                tbody.innerHTML = '';
+                
+                users.forEach(u => {
+                    const statusBadge = u.status === 'active' ? '<span class="badge success">Active</span>' : 
+                                      u.status === 'blocked' ? '<span class="badge danger">Blocked</span>' : 
+                                      '<span class="badge warning">Pending</span>';
+                    
+                    const roleBadge = `<span class="badge" style="background:rgba(168,184,91,0.1); color:var(--admin-primary)">${u.role.toUpperCase()}</span>`;
+                    
+                    const actions = u.status === 'blocked' 
+                        ? `<button class="btn btn-sm btn-outline" onclick="unblockUser(${u.id})"><i class="fa fa-unlock"></i> Unblock</button>`
+                        : `<button class="btn btn-sm btn-outline" style="color:var(--danger)" onclick="blockUser(${u.id})"><i class="fa fa-ban"></i> Block</button>`;
+                        
+                    const deleteBtn = `<button class="btn btn-icon btn-outline" style="color:var(--danger)" onclick="deleteUser(${u.id})" title="Delete User"><i class="fa fa-trash"></i></button>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#${u.id}</strong></td>
+                        <td>${u.name}</td>
+                        <td>${u.email}</td>
+                        <td>${roleBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                        <td style="display:flex;gap:8px;">
+                            ${actions}
+                            ${deleteBtn}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch(e) {
+            console.error("Failed to fetch users", e);
+        }
+    }
+
+    async function blockUser(id) {
+        if(!confirm("Are you sure you want to block this user? Their active sessions will be invalidated.")) return;
+        try {
+            const res = await fetch(`/api/admin/users/block/${id}`, { method: 'PUT' });
+            if(res.ok) {
+                showToast("User successfully blocked.", "success");
+                loadUsers();
+            } else {
+                showToast("Failed to block user.", "error");
+            }
+        } catch(e) {
+            showToast("Network error.", "error");
+        }
+    }
+
+    async function unblockUser(id) {
+        try {
+            const res = await fetch(`/api/admin/users/unblock/${id}`, { method: 'PUT' });
+            if(res.ok) {
+                showToast("User access restored.", "success");
+                loadUsers();
+            } else {
+                showToast("Failed to unblock user.", "error");
+            }
+        } catch(e) {
+            showToast("Network error.", "error");
+        }
+    }
+
+    async function deleteUser(id) {
+        if(!confirm("CRITICAL WARNING: This action is irreversible. All associated user data will be deleted. Proceed?")) return;
+        try {
+            const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                showToast("User permanently deleted.", "success");
+                loadUsers();
+            } else {
+                showToast("Failed to delete user.", "error");
+            }
+        } catch(e) {
+            showToast("Network error.", "error");
+        }
+    }
+
+    loadUsers();
+</script>
+{% endblock %}

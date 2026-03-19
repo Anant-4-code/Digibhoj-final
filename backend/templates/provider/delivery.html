@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Assign Delivery{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-store"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Management</div>
+    <a href="/provider/dashboard" class="sidebar-item">
+      <i class="fa fa-chart-line"></i> Dashboard
+    </a>
+    <a href="/provider/menu" class="sidebar-item">
+      <i class="fa fa-utensils"></i> My Menu
+    </a>
+    <a href="/provider/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/provider/delivery" class="sidebar-item active">
+      <i class="fa fa-motorcycle"></i> Assign Delivery
+    </a>
+    <a href="/provider/analytics" class="sidebar-item">
+      <i class="fa fa-chart-bar"></i> Analytics
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h1>Assign Delivery</h1>
+        <p>Assign your ready orders to nearby delivery partners</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-8)">
+      
+      <!-- Ready Orders List -->
+      <div class="section-card">
+        <h3 class="section-card-title">Orders Ready for Pickup</h3>
+        
+        {% if ready_orders %}
+          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+            {% for o in ready_orders %}
+            <div style="padding:var(--space-4);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--t-fast)" onclick="selectOrder({{ o.id }}, '{{ o.delivery_address|escape }}')" id="orderCard{{ o.id }}" class="order-select-card">
+              <div style="display:flex;justify-content:space-between;margin-bottom:var(--space-2)">
+                <div style="font-weight:700">Order #{{ o.id }}</div>
+                <div style="font-size:var(--sm);font-weight:700;color:var(--green-dark)">₹{{ o.total_price|int }}</div>
+              </div>
+              <div style="font-size:var(--sm);color:var(--text-muted);display:flex;align-items:center;gap:var(--space-2)">
+                <i class="fa fa-map-marker-alt"></i> {{ o.delivery_address[:40] }}{{ '...' if o.delivery_address|length > 40 else '' }}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state" style="padding:var(--space-8) 0">
+            <i class="fa fa-box-open" style="font-size:3rem;color:var(--border);margin-bottom:var(--space-4)"></i>
+            <p>No orders are currently marked as "Ready".</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Assign Form -->
+      <div class="section-card">
+        <h3 class="section-card-title">Available Delivery Partners</h3>
+        
+        <form action="/provider/action/delivery/assign" method="POST" id="assignForm">
+          <input type="hidden" name="order_id" id="selectedOrderId" required>
+          
+          <div class="alert-box alert-info" id="selectionHint" style="padding:var(--space-3);background:rgba(243,154,31,0.1);border:1px solid rgba(243,154,31,0.2);color:var(--orange-dark)">
+            <i class="fa fa-info-circle"></i> Please select a ready order from the left first.
+          </div>
+          
+          <div id="assignSection" style="display:none;margin-top:var(--space-6)">
+            <h4 style="margin-bottom:var(--space-3);font-size:var(--sm);color:var(--text-muted)">Selected Order Drop-off</h4>
+            <div id="selectedOrderAddress" style="font-weight:600;margin-bottom:var(--space-6);padding:var(--space-3);background:var(--bg);border-radius:var(--radius-sm)"></div>
+            
+            <h4 style="margin-bottom:var(--space-3);font-size:var(--sm);color:var(--text-muted)">Select Agent</h4>
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);max-height:250px;overflow-y:auto;padding-right:var(--space-2)">
+              {% for a in agents %}
+              <label style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--t-fast)">
+                <input type="radio" name="agent_id" value="{{ a.id }}" required>
+                <div class="avatar">{{ a.user.name[0] }}</div>
+                <div style="flex:1">
+                  <div style="font-weight:600">{{ a.user.name }}</div>
+                  <div style="font-size:var(--xs);color:var(--text-muted)">
+                    {{ a.vehicle_type }} • {{ a.service_area }}
+                  </div>
+                </div>
+                <div>
+                  <span class="status-badge status-{{ a.availability.value }}" style="font-size:10px">{{ a.availability.value|title }}</span>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:var(--space-6)">Confirm Assignment</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+function selectOrder(id, address) {
+  document.querySelectorAll('.order-select-card').forEach(c => {
+    c.style.borderColor = 'var(--border)';
+    c.style.background = 'white';
+  });
+  
+  const card = document.getElementById('orderCard' + id);
+  card.style.borderColor = 'var(--orange)';
+  card.style.background = 'rgba(243,154,31,0.05)';
+  
+  document.getElementById('selectedOrderId').value = id;
+  document.getElementById('selectionHint').style.display = 'none';
+  document.getElementById('assignSection').style.display = 'block';
+  document.getElementById('selectedOrderAddress').textContent = address;
+}
+</script>
+{% endblock %}

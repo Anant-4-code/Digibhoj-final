@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% block title %}Delivery Dashboard{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/delivery/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Rider</a>
+    </div>
+    <div class="navbar-actions">
+      <!-- Notifications -->
+      <div class="dropdown" data-dropdown style="margin-right:var(--space-2)">
+        <div class="cart-badge" style="color:white;font-size:1.2rem;cursor:pointer" data-dropdown-trigger>
+          <i class="fa-regular fa-bell"></i>
+          <span class="count" style="background:var(--red);top:-8px;right:-8px">1</span>
+        </div>
+        <div class="dropdown-menu" style="width:300px;right:-10px;top:45px">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;color:var(--text)">
+            Notifications <span style="font-size:10px;color:var(--orange);cursor:pointer">Mark all as read</span>
+          </div>
+          <div style="max-height:300px;overflow-y:auto;color:var(--text)">
+            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;color:var(--text)">New Delivery Assigned! <i class="fa fa-map-marker-alt text-orange" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Order #4092 pickup from Swadist Mess.</div>
+            </a>
+          </div>
+          <a href="#" class="dropdown-item" style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View All</a>
+        </div>
+      </div>
+
+      <div class="badge badge-gray" style="background:rgba(255,255,255,0.2);color:white;text-transform:none">
+        <i class="fa fa-circle" style="color:#00e676;font-size:10px;margin-right:4px"></i> {{ agent.availability.value|title }}
+      </div>
+      
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-motorcycle"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} 
+            {% if agent.verification_status.value == 'verified' %}
+            <i class="fa fa-circle-check" style="color:#b3e5fc;margin-left:4px" title="Verified Rider"></i>
+            {% endif %}
+            <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i>
+          </span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/delivery/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Rider Actions</div>
+    <a href="/delivery/dashboard" class="sidebar-item active">
+      <i class="fa fa-motorcycle"></i> Active Tasks
+    </a>
+    
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/delivery/profile" class="sidebar-item">
+      <i class="fa fa-user-circle"></i> Profile & Vehicle
+    </a>
+  </aside>
+
+  <main class="main-content page-enter">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <h1>Ride Dashboard</h1>
+        <p>Manage your active delivery assignments</p>
+      </div>
+      <div class="status-badge status-{{ agent.verification_status.value }}" style="font-size:var(--sm);padding:8px 16px">
+        <i class="fa fa-{% if agent.verification_status.value == 'verified' %}check-circle{% else %}clock{% endif %}"></i> 
+        Account {{ agent.verification_status.value|title }}
+      </div>
+    </div>
+
+    {% if agent.verification_status.value == 'pending' %}
+    <div class="alert-box alert-warning">
+      <i class="fa fa-info-circle"></i> Your delivery account is currently pending admin verification. You cannot receive orders yet.
+    </div>
+    {% endif %}
+    {% if agent.verification_status.value == 'blocked' %}
+    <div class="alert-box alert-error">
+      <i class="fa fa-ban"></i> Your account has been restricted. Please contact support.
+    </div>
+    {% endif %}
+
+    <div class="stats-grid" style="grid-template-columns:repeat(4, 1fr)">
+      <div class="stat-card" style="background:var(--grad-hero);color:white;border:none">
+        <div class="stat-icon" style="background:rgba(255,255,255,0.2);color:white"><i class="fa fa-wallet"></i></div>
+        <div class="stat-value count-up" data-prefix="₹" id="todays-earnings">{{ total_earnings|int }}</div>
+        <div class="stat-label" style="color:rgba(255,255,255,0.8)">Today's Earnings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e3f2fd;color:#1565c0"><i class="fa fa-box"></i></div>
+        <div class="stat-value count-up" id="todays-deliveries">{{ completed_tasks|length }}</div>
+        <div class="stat-label">Deliveries Completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e8f5e9;color:var(--green)"><i class="fa fa-bolt"></i></div>
+        <div class="stat-value" id="current-speed">0 km/h</div>
+        <div class="stat-label">Current Speed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f3e5f5;color:#9c27b0"><i class="fa fa-battery-half"></i></div>
+        <div class="stat-value" id="device-battery">--%</div>
+        <div class="stat-label">Device Battery</div>
+      </div>
+    </div>
+    <div class="section-card" style="margin-top:var(--space-8);padding:0;background:transparent;box-shadow:none">
+      <h3 class="section-card-title" style="margin-bottom:var(--space-4)">Active Deliveries</h3>
+      
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:var(--space-6);align-items:start">
+        <!-- Interactive Map and Actions -->
+        <div>
+          <div id="tracking-map" style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--border);height:500px;position:relative;margin-bottom:var(--space-4)">
+            <!-- Custom Map Controls (Extracted from old version) -->
+            <div class="map-controls">
+                <button class="map-control-btn" id="center-location" title="Center on my location">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <button class="map-control-btn" id="toggle-traffic" title="Toggle traffic">
+                    <i class="fas fa-road"></i>
+                </button>
+                <button class="map-control-btn" id="fullscreen-map" title="Fullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Google Map Instance -->
+            <div id="map" style="width: 100%; height: 100%;"></div>
+
+            <!-- Loading Overlay -->
+            <div class="map-loading" id="map-loading">
+                <div class="loading-spinner"></div>
+                <p style="color:var(--text);font-size:var(--sm);margin-top:var(--space-2)">Initializing Maps...</p>
+            </div>
+            
+            <!-- ETA Badge -->
+            <div id="delivery-eta" class="eta-badge">Connecting to GPS...</div>
+          </div>
+
+          <!-- Quick Action Bar -->
+          <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-6)">
+            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.open('https://wa.me/')"><i class="fab fa-whatsapp"></i> Chat</button>
+            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.location.href='tel:'"><i class="fa fa-phone"></i> Call</button>
+            <button class="btn btn-secondary magnetic" style="flex:1" onclick="window.deliveryTracker.initMap()"><i class="fa fa-sync"></i> Refresh Map</button>
+          </div>
+        </div>
+
+        <!-- Navigation Sidebar -->
+        <div class="section-card" style="margin:0;display:flex;flex-direction:column;height:500px;background:white">
+          <h3 class="section-card-title" style="font-size:1rem;display:flex;justify-content:space-between">
+            Navigation <span id="route-eta-text" style="font-size:12px;color:var(--orange)">-- mins</span>
+          </h3>
+          <div id="route-stats" style="margin-bottom:var(--space-4);font-size:var(--xs);color:var(--text-muted)">
+            <i class="fa fa-road"></i> Distance: <span id="route-distance">0.0 km</span>
+          </div>
+          <div class="instructions-list custom-scrollbar" id="nav-instructions-list" style="flex:1;overflow-y:auto">
+            <div style="text-align:center;padding:var(--space-10);color:var(--text-muted)">
+              <i class="fa fa-map-signs" style="font-size:2rem;margin-bottom:var(--space-2)"></i>
+              <p style="font-size:var(--sm)">Accept a task to see directions</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Section -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-top:var(--space-8)">
+        <div class="section-card" style="background:white">
+          <h3 class="section-card-title">Earnings Trend</h3>
+          <div style="height:250px">
+            <canvas id="earnings-chart"></canvas>
+          </div>
+        </div>
+        <div class="section-card" style="background:white">
+          <h3 class="section-card-title">Performance Radar</h3>
+          <div style="height:250px">
+            <canvas id="performance-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+        <!-- Task List -->
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);max-height:600px;overflow-y:auto;padding-right:var(--space-2)" class="custom-scrollbar">
+          {% if active_tasks %}
+            {% for task in active_tasks %}
+            <div class="task-card-status-{{ task.status.value }}" style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
+              
+              <div class="task-header-status-{{ task.status.value }}" style="padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+                <strong style="color:var(--text);font-size:1rem">Order #{{ task.order_id }}</strong>
+                <span class="status-badge status-{{ task.status.value }}" style="font-size:10px">{{ task.status.value|replace('_', ' ')|title }}</span>
+              </div>
+              
+              <div style="padding:var(--space-4)">
+                
+                <!-- Route Tracking UI -->
+                <div style="display:flex;flex-direction:column;gap:var(--space-3);position:relative;margin-bottom:var(--space-4)">
+                  <div style="position:absolute;left:15px;top:20px;bottom:20px;width:2px;background:var(--border);z-index:1"></div>
+                  
+                  <div style="display:flex;gap:var(--space-3);position:relative;z-index:2">
+                    <div style="width:32px;height:32px;border-radius:50%;background:black;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0"><i class="fa fa-store"></i></div>
+                    <div>
+                      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Pickup</div>
+                      <div style="font-weight:600;font-size:var(--sm)">{{ task.pickup_location }}</div>
+                      <div style="font-size:11px;color:black;margin-top:2px;font-weight:500"><i class="fa fa-phone-alt"></i> Call {{ task.order.provider.mess_name }}</div>
+                    </div>
+                  </div>
+                  
+                  <div style="display:flex;gap:var(--space-3);position:relative;z-index:2;margin-top:var(--space-2)">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0"><i class="fa fa-home"></i></div>
+                    <div>
+                      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Drop-off</div>
+                      <div style="font-weight:600;font-size:var(--sm)">{{ task.drop_location }}</div>
+                      <div style="font-size:11px;color:var(--green);margin-top:2px;font-weight:500"><i class="fa fa-phone-alt"></i> Call {{ task.order.customer.user.name }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <hr style="border:none;border-top:1px dashed var(--border);margin-bottom:var(--space-4)">
+                
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
+                  <div style="font-size:var(--sm);color:var(--text-muted)">Est. Earnings</div>
+                  <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ (task.order.total_price * 0.1)|int }}</div>
+                </div>
+                
+                <div>
+                  {% if task.status.value == 'assigned' %}
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+                    <form action="/delivery/action/accept/{{ task.id }}" method="POST">
+                      <button type="submit" class="btn btn-primary btn-full magnetic" style="background:var(--orange);color:white">
+                        <i class="fa fa-check"></i> Accept
+                      </button>
+                    </form>
+                    <form action="/delivery/action/reject/{{ task.id }}" method="POST" onsubmit="return confirm('Are you sure you want to reject this delivery?')">
+                      <button type="submit" class="btn btn-outline btn-full magnetic" style="border-color:var(--red);color:var(--red)">
+                        <i class="fa fa-times"></i> Reject
+                      </button>
+                    </form>
+                  </div>
+                  {% elif task.status.value == 'accepted' %}
+                  <button class="btn btn-warning btn-full magnetic" style="margin-bottom:8px" onclick="updateCurrentTaskStatus('picked_up', '{{ task.order_id }}')">
+                    <i class="fa fa-box-open"></i> Mark Picked Up
+                  </button>
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% elif task.status.value == 'picked_up' %}
+                  <button class="btn btn-primary btn-full magnetic" style="background:#1565c0;color:white;margin-bottom:8px" onclick="updateCurrentTaskStatus('out_for_delivery', '{{ task.order_id }}')">
+                    <i class="fa fa-truck-fast"></i> Mark Out for Delivery
+                  </button>
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% elif task.status.value == 'delivering' %}
+                  <button class="btn btn-success btn-full magnetic" style="background:var(--green);color:white;margin-bottom:8px" onclick="openOTPModal('{{ task.order_id }}')">
+                    <i class="fa fa-check-circle"></i> Complete Drop-off
+                  </button>
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% endif %}
+                </div>
+                
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state" style="background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px dashed var(--border)">
+              <div style="width:60px;height:60px;border-radius:50%;background:rgba(21,101,192,0.1);color:#1565c0;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto var(--space-4)">
+                <i class="fa fa-radar"></i>
+              </div>
+              <h3 style="margin-bottom:var(--space-2)">Searching for orders...</h3>
+              <p style="color:var(--text-muted);font-size:var(--sm);max-width:250px;margin:0 auto">Stay online in {{ agent.service_area|default('your area') }} to receive new delivery assignments.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  <!-- OTP Verification Modal -->
+<div id="otp-modal" class="modal-overlay" style="display:none">
+  <div class="modal-content" style="max-width:400px;text-align:center">
+    <div style="width:60px;height:60px;background:#e8f5e9;color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4);font-size:1.5rem">
+      <i class="fa fa-shield-check"></i>
+    </div>
+    <h3 style="margin-bottom:var(--space-2)">Confirm Delivery</h3>
+    <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">Enter the 4-digit OTP provided by the customer to complete this delivery.</p>
+    
+    <div style="display:flex;gap:var(--space-3);justify-content:center;margin-bottom:var(--space-6)">
+      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+    </div>
+    
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+      <button class="btn btn-outline" onclick="closeOTPModal()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--green);color:white" onclick="verifyOTPAndDeliver()">Verify & Deliver</button>
+    </div>
+  </div>
+</div>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCHcy-Q_QUtr47GktdKg7UNvvRKKYOpxE&libraries=geometry,places,routes,marker&callback=initMap"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/js/delivery-tracking.js"></script>
+
+<script>
+window.agentId = "{{ agent.id }}";
+let currentOrderIdForDelivery = null;
+
+function updateCurrentTaskStatus(status, orderId) {
+    const endpointMap = {
+        'picked_up': `/api/delivery/picked/${orderId}`,
+        'out_for_delivery': `/api/delivery/out-for-delivery/${orderId}`,
+        'delivered': `/api/delivery/delivered/${orderId}`
+    };
+    
+    fetch(endpointMap[status], { method: 'PUT' })
+    .then(r => {
+        if (r.ok) {
+            showToast(`Delivery status updated to ${status.replace(/_/g, ' ')}! 🚚`, 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        }
+    });
+}
+
+function openOTPModal(orderId) {
+    currentOrderIdForDelivery = orderId;
+    document.getElementById('otp-modal').style.display = 'flex';
+}
+
+function closeOTPModal() {
+    document.getElementById('otp-modal').style.display = 'none';
+}
+
+function verifyOTPAndDeliver() {
+    // Simulate OTP verification and complete delivery
+    updateCurrentTaskStatus('delivered', currentOrderIdForDelivery);
+    closeOTPModal();
+}
+</script>
+
+<style>
+/* Modal overlay styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.modal-content {
+    background: white;
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+/* Custom Scrollbar for task list */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-color);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Tracking Card Styles */
+.task-card-active {
+  border-left: 4px solid var(--orange);
+}
+.eta-badge {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    font-weight: 700;
+    color: var(--orange);
+    z-index: 10;
+}
+</style>
+{% endblock %}
