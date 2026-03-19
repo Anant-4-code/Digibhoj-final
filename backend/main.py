@@ -10,9 +10,15 @@ app = FastAPI(title="DigiBhoj", description="Smart Mess & Tiffin Platform", vers
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
+from pathlib import Path
+
 # Static files
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-app.mount("/assets", StaticFiles(directory=os.path.join(base_dir, "assets")), name="assets")
+base_dir = Path(__file__).resolve().parent.parent
+assets_path = base_dir / "assets"
+if not assets_path.exists():
+    assets_path = Path.cwd() / "assets"
+
+app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
 
 # Create tables on startup
 @app.on_event("startup")
