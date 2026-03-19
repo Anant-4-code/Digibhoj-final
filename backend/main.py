@@ -24,6 +24,14 @@ for path_cand in [base_dir / "assets", base_dir / "public" / "assets", Path.cwd(
 @app.on_event("startup")
 def startup():
     create_tables()
+    # On Vercel, the DB is in /tmp and starts empty. Auto-seed it for the demo.
+    if os.environ.get("VERCEL"):
+        try:
+            from backend.seed import seed
+            seed()
+            print("Auto-seeded Vercel database.")
+        except Exception as e:
+            print(f"Auto-seeding failed: {e}")
 
 # API Router order matters — specific before generic
 app.include_router(api_auth.router)
