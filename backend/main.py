@@ -14,11 +14,11 @@ from pathlib import Path
 
 # Static files
 base_dir = Path(__file__).resolve().parent.parent
-assets_path = base_dir / "assets"
-if not assets_path.exists():
-    assets_path = Path.cwd() / "assets"
-
-app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+# Check possible locations for assets
+for path_cand in [base_dir / "assets", base_dir / "public" / "assets", Path.cwd() / "assets", Path.cwd() / "public" / "assets"]:
+    if path_cand.exists():
+        app.mount("/assets", StaticFiles(directory=str(path_cand)), name="assets")
+        break
 
 # Create tables on startup
 @app.on_event("startup")
