@@ -4,7 +4,13 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.sql import func
 import enum
 
-DATABASE_URL = "sqlite:///./digibhoj.db"
+import os
+
+# Use /tmp for SQLite on Vercel to avoid read-only filesystem errors
+if os.environ.get("VERCEL"):
+    DATABASE_URL = "sqlite:////tmp/digibhoj.db"
+else:
+    DATABASE_URL = "sqlite:///./digibhoj.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
