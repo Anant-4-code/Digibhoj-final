@@ -35,86 +35,774 @@
     </a>
   </aside>
 
-  <main class="main-content page-enter">
-    <div class="page-header">
-      <h1>Rider Profile</h1>
-      <p>Manage your vehicle details and service area</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 2fr;gap:var(--space-8)">
+  <main class="main-content page-enter" style="padding:var(--space-8);max-width:1200px;margin:0 auto;">
+    
+    <div style="display:grid;grid-template-columns:1fr;gap:var(--space-6);" class="profile-layout-grid">
       
-      <!-- Info Card -->
-      <div class="section-card" style="align-self:start;text-align:center">
-        <div class="avatar avatar-xl" style="margin:0 auto var(--space-4);background:#fff3e0;color:var(--orange)">
-          <i class="fa fa-user-tie"></i>
-        </div>
-        <h2 style="margin-bottom:var(--space-1)">{{ user.name }}</h2>
-        <div style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">
-          <div class="status-badge status-{{ agent.verification_status.value }}" style="margin-top:var(--space-2)">
-            Account {{ agent.verification_status.value|title }}
-          </div>
-        </div>
-        
-        <!-- Availability Toggle -->
-        <form action="/delivery/action/availability/toggle" method="POST" style="margin-bottom:var(--space-6);padding:var(--space-4);background:var(--bg);border-radius:var(--radius);border:1px solid var(--border)">
-          <div style="font-size:var(--sm);font-weight:600;margin-bottom:var(--space-2)">Current Status</div>
-          <button type="submit" class="btn {% if agent.availability.value == 'available' %}btn-primary{% else %}btn-outline{% endif %} btn-full" style="{% if agent.availability.value == 'available' %}background:#00e676;border-color:#00e676{% endif %}">
-            <i class="fa fa-power-off"></i> {% if agent.availability.value == 'available' %}Go Offline{% else %}Go Online{% endif %}
-          </button>
-        </form>
-        
-        <div style="text-align:left;font-size:var(--sm)">
-          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text-muted);display:block">Member Since</strong>
-            {{ user.created_at.strftime('%B %Y') if user.created_at else 'N/A' }}
-          </div>
-          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text-muted);display:block">Lifetime Earnings</strong>
-            ₹{{ agent.total_earnings|int }}
-          </div>
-        </div>
-        
-        <a href="/logout" class="btn btn-outline btn-full" style="color:var(--red);border-color:var(--red);margin-top:var(--space-6)">
-          <i class="fa fa-sign-out-alt"></i> Logout
-        </a>
-      </div>
-
-      <!-- Settings Form -->
-      <div class="section-card">
-        <h3 class="section-card-title">Vehicle & Area Details</h3>
-        
-        <form action="/delivery/action/profile/update" method="POST">
-          <div class="form-group">
-            <label class="form-label" for="phone">Phone Number</label>
-            <input type="tel" id="phone" name="phone" class="form-control" value="{{ agent.phone }}" required>
+      <!-- 📌 LEFT SIDE (Profile Card - 4 Cols) -->
+      <div class="profile-sidebar">
+        <div class="section-card sidebar-card" style="text-align:center;padding:var(--space-8) var(--space-6);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;height:100%;background:linear-gradient(135deg, #ffffff 0%, #fffbf2 100%)">
+          
+          <div style="position:relative;width:110px;height:110px;margin:0 auto var(--space-4)">
+            <div class="avatar-ring"></div>
+            {% if agent.profile_photo_url %}
+            <img src="{{ agent.profile_photo_url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:4px solid white;box-shadow:var(--shadow-md);position:relative;z-index:2">
+            {% else %}
+            <div class="avatar avatar-xl" style="width:100%;height:100%;background:#fff3e0;color:var(--orange);font-size:44px;position:relative;z-index:2;border:4px solid white;box-shadow:var(--shadow-md)">
+              <i class="fa fa-user-tie"></i>
+            </div>
+            {% endif %}
+            <div class="status-indicator-glow {% if agent.availability.value == 'online' %}online-glow{% endif %}" style="position:absolute;bottom:8px;right:8px;width:18px;height:18px;border-radius:50%;background:{% if agent.availability.value == 'online' %}#00e676{% else %}#aaa{% endif %};border:3px solid white;z-index:3"></div>
           </div>
           
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
-            <div class="form-group">
-              <label class="form-label" for="vehicle_type">Vehicle Type</label>
-              <select id="vehicle_type" name="vehicle_type" class="form-control" required>
-                <option value="Bike" {% if agent.vehicle_type == 'Bike' %}selected{% endif %}>Bike</option>
-                <option value="Scooter" {% if agent.vehicle_type == 'Scooter' %}selected{% endif %}>Scooter</option>
-                <option value="Cycle" {% if agent.vehicle_type == 'Cycle' %}selected{% endif %}>Cycle</option>
-              </select>
+          <h2 style="margin-bottom:var(--space-1);font-size:1.6rem;font-weight:800;letter-spacing:-0.5px">{{ user.name }}</h2>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:var(--space-4)">Professional Delivery Partner</div>
+          
+          <!-- Availability Toggle (Branded) -->
+          <div class="availability-toggle-wrapper" style="display:inline-flex;align-items:center;background:#f8fafc;padding:6px 16px;border-radius:var(--radius-full);margin:0 auto var(--space-8);border:1px solid #e2e8f0">
+             <span style="font-size:10px;font-weight:800;color:{% if agent.availability.value != 'online' %}var(--text){% else %}var(--text-muted){% endif %};transition:all 0.3s">OFFLINE</span>
+             <label class="switch" style="margin:0 10px">
+               <input type="checkbox" id="availabilityToggle" {% if agent.availability.value == 'online' %}checked{% endif %} onchange="toggleAgentAvailability(this)">
+               <span class="slider round"></span>
+             </label>
+             <span style="font-size:10px;font-weight:800;color:{% if agent.availability.value == 'online' %}var(--orange){% else %}var(--text-muted){% endif %};transition:all 0.3s">ONLINE</span>
+          </div>
+          
+          <!-- Earnings Section (Animated/Live) -->
+          <div class="earnings-card" style="text-align:left;background:white;padding:var(--space-4) var(--space-5);border-radius:16px;box-shadow:var(--shadow-sm);border:1px solid rgba(243,154,31,0.1);margin-bottom:var(--space-8);position:relative;overflow:hidden">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="font-size:10px;font-weight:800;color:var(--text-muted);letter-spacing:1.2px">TODAY'S EARNINGS</div>
+              <div class="live-pulse-badge">
+                <span class="pulse-dot"></span> LIVE
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="license_number">License Number</label>
-              <input type="text" id="license_number" name="license_number" class="form-control" value="{{ agent.license_number }}" required>
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <div style="font-size:2.2rem;font-weight:900;color:var(--text);letter-spacing:-1px">₹<span class="count-up" data-value="{{ agent.total_earnings|int }}" id="liveEarnings">{{ agent.total_earnings|int }}</span></div>
+              <div style="font-size:12px;font-weight:700;color:var(--green);display:flex;align-items:center;gap:4px">
+                <i class="fa fa-arrow-trend-up"></i> +12%
+              </div>
+            </div>
+            <div style="height:2px;background:#f1f5f9;width:100%;margin-top:12px;position:relative">
+              <div style="position:absolute;top:0;left:0;height:100%;width:75%;background:var(--orange);border-radius:2px"></div>
             </div>
           </div>
-          
-          <div class="form-group">
-            <label class="form-label" for="service_area">Preferred Service Area</label>
-            <input type="text" id="service_area" name="service_area" class="form-control" value="{{ agent.service_area }}" required>
-            <p style="font-size:var(--xs);color:var(--text-muted);margin-top:var(--space-1)"><i class="fa fa-info-circle"></i> E.g., Kothrud, Baner, Wakad.</p>
+
+          <!-- Quick Stats Grid (Premium View) -->
+          <div class="stats-premium-grid">
+            <div class="stat-mini-card">
+              <div class="stat-icon" style="background:rgba(100,116,139,0.1);color:#64748b"><i class="fa fa-box-archive"></i></div>
+              <div class="stat-value count-up" data-value="156">156</div>
+              <div class="stat-label">TOTAL ORDERS</div>
+            </div>
+            <div class="stat-mini-card">
+              <div class="stat-icon" style="background:rgba(16,185,129,0.1);color:#10b981"><i class="fa fa-circle-check"></i></div>
+              <div class="stat-value count-up" data-value="148">148</div>
+              <div class="stat-label">COMPLETED</div>
+            </div>
+            <div class="stat-mini-card">
+              <div class="stat-icon" style="background:rgba(239,68,68,0.1);color:#ef4444"><i class="fa fa-circle-xmark"></i></div>
+              <div class="stat-value">2.4%</div>
+              <div class="stat-label">CANCEL RATE</div>
+            </div>
+            <div class="stat-mini-card">
+              <div class="stat-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b"><i class="fa fa-star"></i></div>
+              <div class="stat-value">4.8</div>
+              <div class="stat-label">RATING</div>
+            </div>
           </div>
-          
-          <button type="submit" class="btn btn-primary" style="margin-top:var(--space-4);background:var(--orange)">Update Rider Profile</button>
-        </form>
+
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:auto;padding-top:var(--space-8)">
+            <button class="btn btn-outline" style="width:100%;border-radius:12px;font-weight:700;font-size:13px;height:44px;display:flex;align-items:center;justify-content:center;gap:10px" onclick="switchProfileTab(null, 'security')">
+              <i class="fa fa-shield-halved"></i> Security Settings
+            </button>
+            <a href="/logout" class="btn btn-outline" style="width:100%;border-radius:12px;font-weight:700;font-size:13px;height:44px;display:flex;align-items:center;justify-content:center;gap:10px;text-decoration:none;border-color:#e2e8f0;color:var(--text-muted)">
+              <i class="fa fa-arrow-right-from-bracket"></i> Logout
+            </a>
+          </div>
+        </div>
       </div>
 
+      <!-- 📌 RIGHT SIDE (Main Content - 8 Cols) -->
+      <div class="profile-main-content" style="display:flex;flex-direction:column;gap:var(--space-6)">
+        
+        <!-- Tab Navigation Header -->
+        <div class="section-card" style="padding:0;overflow:hidden;margin-bottom:0">
+          <div class="tabs-header" style="display:flex;background:var(--bg);border-bottom:1px solid var(--border)">
+            <button class="tab-btn active" onclick="switchProfileTab(event, 'personal')" style="flex:1;padding:16px;border:none;background:none;font-weight:700;color:var(--text);cursor:pointer;border-bottom:3px solid var(--orange);font-size:var(--sm);text-transform:uppercase;letter-spacing:0.5px">
+              <i class="fa fa-user-gear" style="margin-right:8px"></i>Profile & Vehicle
+            </button>
+            <button class="tab-btn" onclick="switchProfileTab(event, 'security')" style="flex:1;padding:16px;border:none;background:none;font-weight:700;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;font-size:var(--sm);text-transform:uppercase;letter-spacing:0.5px">
+              <i class="fa fa-shield-halved" style="margin-right:8px"></i>Security
+            </button>
+            <button class="tab-btn" onclick="switchProfileTab(event, 'notifications')" style="flex:1;padding:16px;border:none;background:none;font-weight:700;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;font-size:var(--sm);text-transform:uppercase;letter-spacing:0.5px">
+              <i class="fa fa-bell" style="margin-right:8px"></i>Alerts
+            </button>
+          </div>
+        </div>
+
+        <!-- 📌 TAB 1: PERSONAL & VEHICLE -->
+        <div id="personal" class="profile-tab-content active-tab" style="display:flex;flex-direction:column;gap:var(--space-6)">
+          <!-- Section 1: Vehicle & Area Details -->
+          <div class="section-card" style="box-shadow:var(--shadow-sm);position:relative">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--space-6)">
+              <div style="width:40px;height:40px;border-radius:8px;background:#fff3e0;color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                <i class="fa fa-motorcycle"></i>
+              </div>
+              <h3 style="margin:0;font-size:1.2rem;font-weight:700">Vehicle & Area Details</h3>
+            </div>
+            
+            <form action="/delivery/action/profile/update" method="POST" id="profileUpdateForm">
+              
+              <div class="nice-grid">
+                <div class="form-group custom-input-group">
+                  <label class="form-label text-caps">Phone Number</label>
+                  <div class="input-wrapper">
+                    <i class="fa fa-phone icon-left"></i>
+                    <input type="tel" id="phone" name="phone" class="form-control" value="{{ agent.phone }}" required>
+                  </div>
+                </div>
+                
+                <div class="form-group custom-input-group">
+                  <label class="form-label text-caps">License Number</label>
+                  <div class="input-wrapper">
+                    <i class="fa fa-id-card icon-left"></i>
+                    <input type="text" id="license_number" name="license_number" class="form-control" value="{{ agent.license_number }}" required>
+                  </div>
+                </div>
+
+                <div class="form-group custom-input-group">
+                  <label class="form-label text-caps">Vehicle Type</label>
+                  <select id="vehicle_type" name="vehicle_type" class="form-control" required style="appearance:none;padding-right:32px">
+                    <option value="Bike" {% if agent.vehicle_type == 'Bike' %}selected{% endif %}>Motorcycle</option>
+                    <option value="Electric Scooter (EV)" {% if agent.vehicle_type == 'Electric Scooter (EV)' %}selected{% endif %}>Electric Scooter (EV)</option>
+                    <option value="Cycle" {% if agent.vehicle_type == 'Cycle' %}selected{% endif %}>Bicycle</option>
+                  </select>
+                  <i class="fa fa-chevron-down" style="position:absolute;right:16px;bottom:16px;font-size:12px;color:var(--text-muted);pointer-events:none"></i>
+                </div>
+                
+                <div class="form-group custom-input-group address-selector-container">
+                  <label class="form-label text-caps">Service Area</label>
+                  <div class="address-grid nice-grid" style="margin-bottom:8px">
+                    <select class="address-state form-control" style="appearance:none">
+                      <option value="">-- Select State --</option>
+                    </select>
+                    <select class="address-city form-control" disabled style="appearance:none">
+                      <option value="">-- Select City --</option>
+                    </select>
+                  </div>
+                  <textarea class="detailed-address form-control" rows="2" style="resize:none;padding:12px 16px" placeholder="Specific Area, Landmark"></textarea>
+                  
+                  <input type="hidden" name="service_area" class="full-address-input" value="{{ agent.service_area }}">
+                  
+                  <div class="address-actions" style="margin-top:var(--space-4)">
+                    <button type="button" class="btn-get-location address-btn active" style="font-weight:600;font-size:12px;padding:8px 16px;background:#fff3e0;color:var(--orange);border-color:#fff3e0">
+                      <i class="fa fa-location-arrow"></i> Use Current Location
+                    </button>
+                    <button type="button" class="btn-pick-map address-btn" style="font-weight:600;font-size:12px;padding:8px 16px">
+                      <i class="fa fa-map-marked-alt"></i> Pick on Map
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sticky Save Flow -->
+              <div id="saveIndicator" style="display:none;align-items:center;gap:8px;position:absolute;top:24px;right:24px;color:var(--green)">
+                <i class="fa fa-check-circle"></i> <span style="font-size:12px;font-weight:700">Saved</span>
+              </div>
+              <button type="button" class="btn btn-primary" id="saveProfileBtn" style="position:fixed;bottom:24px;right:24px;box-shadow:0 4px 12px rgba(255,115,0,0.3);z-index:100;border-radius:var(--radius-full);padding:12px 24px;display:none" onclick="submitProfileForm()">
+                <i class="fa fa-save"></i> Save Changes
+              </button>
+            </form>
+          </div>
+
+          <!-- Section 2: KYC Documents (Upload Cards UI) -->
+          <div class="section-card" style="box-shadow:var(--shadow-sm)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-6)">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:40px;height:40px;border-radius:8px;background:#e1f5fe;color:#03a9f4;display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                  <i class="fa fa-shield-check"></i>
+                </div>
+                <h3 style="margin:0;font-size:1.2rem;font-weight:700">KYC Documents</h3>
+              </div>
+              
+              {% if agent.verification_status.value == 'verified' %}
+              <div class="badge badge-green" style="font-weight:700;padding:6px 12px"><i class="fa fa-check"></i> Verified</div>
+              {% else %}
+              <div class="badge badge-yellow" style="font-weight:700;padding:6px 12px"><i class="fa fa-clock"></i> Pending Verification</div>
+              {% endif %}
+            </div>
+            
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:var(--space-4)">
+              
+              <!-- Aadhaar Card -->
+              <div class="upload-card">
+                <div class="upload-icon"><i class="fa fa-address-card"></i></div>
+                <div class="upload-title">Aadhar Card</div>
+                <div class="upload-status {% if agent.aadhaar_url %}status-approved{% else %}status-pending{% endif %}">
+                  {% if agent.aadhaar_url %}APPROVED{% else %}REQUIRED{% endif %}
+                </div>
+                <input type="file" id="aadhaarFile" accept="image/*,.pdf" style="display:none" onchange="autoUpload('aadhaar')">
+                <button type="button" class="btn-upload" onclick="document.getElementById('aadhaarFile').click()">
+                  {% if agent.aadhaar_url %}Update Document{% else %}Upload Document{% endif %}
+                </button>
+              </div>
+
+              <!-- Driving License -->
+              <div class="upload-card">
+                <div class="upload-icon"><i class="fa fa-car"></i></div>
+                <div class="upload-title">Driving License</div>
+                <div class="upload-status {% if agent.dl_url %}status-pending-verification{% else %}status-pending{% endif %}">
+                  {% if agent.dl_url %}PENDING VERIFICATION{% else %}REQUIRED{% endif %}
+                </div>
+                <input type="file" id="dlFile" accept="image/*,.pdf" style="display:none" onchange="autoUpload('dl')">
+                <button type="button" class="btn-upload" onclick="document.getElementById('dlFile').click()">
+                  {% if agent.dl_url %}Update Document{% else %}Upload Document{% endif %}
+                </button>
+              </div>
+
+              <!-- Profile Photo -->
+              <div class="upload-card">
+                <div class="upload-icon"><i class="fa fa-user-circle"></i></div>
+                <div class="upload-title">Profile Photo</div>
+                <div class="upload-status {% if agent.profile_photo_url %}status-approved{% else %}status-pending{% endif %}">
+                  {% if agent.profile_photo_url %}APPROVED{% else %}REQUIRED{% endif %}
+                </div>
+                <input type="file" id="photoFile" accept="image/*" style="display:none" onchange="autoUpload('photo')">
+                <button type="button" class="btn-upload" onclick="document.getElementById('photoFile').click()">
+                  {% if agent.profile_photo_url %}Update Photo{% else %}Upload Photo{% endif %}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📌 TAB 2: SECURITY -->
+        <div id="security" class="profile-tab-content" style="display:none;flex-direction:column;gap:var(--space-6)">
+          <div class="section-card" style="box-shadow:var(--shadow-sm);background:linear-gradient(to bottom right, white, #fffcf8)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--space-6)">
+              <div style="width:40px;height:40px;border-radius:8px;background:#e8f5e9;color:var(--green);display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                <i class="fa fa-lock-open"></i>
+              </div>
+              <div>
+                <h3 style="margin:0;font-size:1.2rem;font-weight:700">Change Password</h3>
+                <p style="margin:0;font-size:11px;color:var(--text-muted)">Security is our top priority. Update your password regularly.</p>
+              </div>
+            </div>
+
+            <form onsubmit="event.preventDefault(); showToast('Password update simulation successful!', 'success');" style="max-width:500px">
+              <div class="form-group custom-input-group">
+                <label class="form-label text-caps">Current Password</label>
+                <div class="input-wrapper">
+                  <i class="fa fa-shield icon-left"></i>
+                  <input type="password" class="form-control" placeholder="••••••••" required>
+                </div>
+              </div>
+              
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+                <div class="form-group custom-input-group">
+                  <label class="form-label text-caps">New Password</label>
+                  <div class="input-wrapper">
+                    <i class="fa fa-key icon-left"></i>
+                    <input type="password" class="form-control" placeholder="New Password" required>
+                  </div>
+                </div>
+                <div class="form-group custom-input-group">
+                  <label class="form-label text-caps">Confirm Password</label>
+                  <div class="input-wrapper">
+                    <i class="fa fa-key icon-left"></i>
+                    <input type="password" class="form-control" placeholder="Repeat Password" required>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin:var(--space-4) 0;padding:var(--space-4);background:rgba(243,154,31,0.05);border-radius:var(--radius);font-size:11px;color:var(--text-muted);display:flex;gap:12px;align-items:center">
+                <i class="fa fa-info-circle text-orange" style="font-size:1.2rem"></i>
+                <span>Password must be at least 8 characters long and include a mix of uppercase letters, numbers, and symbols.</span>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="padding:10px 24px">
+                <i class="fa fa-rotate"></i> Update Password
+              </button>
+            </form>
+          </div>
+
+          <div class="section-card danger-zone-card" style="margin-top:var(--space-2);background:rgba(217,30,24,0.02);border:1px solid rgba(217,30,24,0.1)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--space-4)">
+              <div style="width:40px;height:40px;border-radius:8px;background:rgba(217,30,24,0.1);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                <i class="fa fa-triangle-exclamation"></i>
+              </div>
+              <h3 style="margin:0;font-size:1.1rem;font-weight:800;color:var(--red);text-transform:uppercase;letter-spacing:1px">Danger Zone</h3>
+            </div>
+            <p style="font-size:var(--sm);color:var(--red-dark);margin-bottom:var(--space-6);line-height:1.6">
+               Once you delete your account, you will lose access to all your earnings history, ratings, and profile data. <strong>This action is irreversible.</strong>
+            </p>
+            <button class="btn btn-outline" style="border-color:var(--red);color:var(--red);background:transparent" onclick="showToast('Account deletion protection enabled.', 'error')">
+              <i class="fa fa-trash-can"></i> Request Account Deletion
+            </button>
+          </div>
+        </div>
+
+        <!-- 📌 TAB 3: NOTIFICATIONS -->
+        <div id="notifications" class="profile-tab-content" style="display:none;flex-direction:column;gap:var(--space-6)">
+          <div class="section-card" style="box-shadow:var(--shadow-sm)">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:var(--space-8)">
+              <div style="width:40px;height:40px;border-radius:8px;background:#f3e5f5;color:#9c27b0;display:flex;align-items:center;justify-content:center;font-size:1.2rem">
+                <i class="fa fa-envelope-open-text"></i>
+              </div>
+              <h3 style="margin:0;font-size:1.2rem;font-weight:700">Communication Preferences</h3>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-4)">
+              <div class="notification-settings-card premium-card">
+                <div class="notif-icon-box" style="background:#e3f2fd;color:#1565c0"><i class="fa fa-motorcycle"></i></div>
+                <div class="notif-content">
+                  <span class="notif-title">New Order Alerts</span>
+                  <span class="notif-desc">Get instant notifications when a new delivery task is available near you.</span>
+                </div>
+                <div class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </div>
+              </div>
+
+              <div class="notification-settings-card premium-card">
+                <div class="notif-icon-box" style="background:#e8f5e9;color:var(--green)"><i class="fa fa-wallet"></i></div>
+                <div class="notif-content">
+                  <span class="notif-title">Earnings Reports</span>
+                  <span class="notif-desc">Daily and weekly summaries of your payouts and performance bonuses.</span>
+                </div>
+                <div class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </div>
+              </div>
+
+              <div class="notification-settings-card premium-card">
+                <div class="notif-icon-box" style="background:#fff3e0;color:var(--orange)"><i class="fa fa-shield-cat"></i></div>
+                <div class="notif-content">
+                  <span class="notif-title">Safety & Traffic Updates</span>
+                  <span class="notif-desc">Important alerts regarding road conditions or safety guidelines in your area.</span>
+                </div>
+                <div class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </div>
+              </div>
+            </div>
+            
+            <div style="margin-top:var(--space-4);text-align:right">
+              <button class="btn btn-outline" style="font-weight:700;padding:8px 20px" onclick="showToast('Preferences updated!', 'success')">Save Preferences</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/assets/js/address-selector.js"></script>
+<script>
+  // Availability Toggle
+  async function toggleAgentAvailability(checkbox) {
+    const next = checkbox.checked ? 'online' : 'offline';
+    try {
+        const res = await fetch(`/api/delivery/availability/{{ agent.id }}?status=${next}`, { method: 'PUT' });
+        if(!res.ok) throw new Error("Failed to update status");
+        
+        const indicator = document.querySelector('.status-indicator');
+        if(indicator) indicator.style.background = next === 'online' ? '#00e676' : '#aaa';
+        showToast(`You are now ${next.toUpperCase()}`, 'success');
+        
+    } catch(e) {
+        checkbox.checked = !checkbox.checked; // Revert
+        showToast(e.message, 'error');
+    }
+  }
+
+  // Tab Switching Logic
+  function switchProfileTab(evt, tabId) {
+    // Hide all tab content
+    document.querySelectorAll('.profile-tab-content').forEach(content => {
+      content.style.display = 'none';
+      content.classList.remove('active-tab');
+    });
+
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('active');
+      btn.style.color = 'var(--text-muted)';
+      btn.style.borderColor = 'transparent';
+    });
+
+    // Show the targeted tab with animation class
+    const targetTab = document.getElementById(tabId);
+    if(targetTab) {
+      targetTab.style.display = 'flex';
+      targetTab.classList.add('active-tab');
+    }
+    
+    // Set clicked button to active
+    evt.currentTarget.classList.add('active');
+    evt.currentTarget.style.color = 'var(--text)';
+    evt.currentTarget.style.borderColor = 'var(--orange)';
+  }
+
+  // Upload Logic
+  async function autoUpload(docType) {
+      const fileInput = document.getElementById(docType + 'File');
+      if(!fileInput.files.length) return;
+      
+      const formData = new FormData();
+      formData.append('doc_type', docType);
+      formData.append('file', fileInput.files[0]);
+      formData.append('agent_id', "{{ agent.id }}");
+      
+      showToast("Uploading...", "info");
+      
+      try {
+          const res = await fetch('/api/delivery/profile/upload', {
+              method: 'POST',
+              body: formData
+          });
+          const data = await res.json();
+          if(res.ok) {
+              showToast(data.message, 'success');
+              setTimeout(() => location.reload(), 800);
+          } else {
+              showToast(data.detail, 'error');
+          }
+      } catch(e) {
+          showToast("Upload failed", 'error');
+      }
+  }
+
+  // Sticky Save logic
+  const inputs = document.querySelectorAll('#profileUpdateForm input, #profileUpdateForm select, #profileUpdateForm textarea');
+  const saveBtn = document.getElementById('saveProfileBtn');
+  inputs.forEach(i => i.addEventListener('input', () => {
+      saveBtn.style.display = 'flex';
+  }));
+
+  function submitProfileForm() {
+      saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';
+      const form = document.getElementById('profileUpdateForm');
+      try {
+          form.submit();
+      } catch(e) {}
+  }
+
+  // 🚀 Premium Counter Animation
+  function animateValue(obj, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const val = Math.floor(progress * (end - start) + start);
+      obj.innerHTML = val.toLocaleString();
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }
+
+  // Initialize animations on load
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.count-up').forEach(el => {
+      const target = parseInt(el.getAttribute('data-value'));
+      animateValue(el, 0, target, 1500);
+    });
+
+    // Mock Real-Time Updates Loop
+    setInterval(() => {
+        const earningsEl = document.getElementById('liveEarnings');
+        if (earningsEl) {
+            // 5% chance of a "new order" simulation
+            if (Math.random() > 0.95) {
+                const current = parseInt(earningsEl.innerText.replace(/,/g, ''));
+                const increment = Math.floor(Math.random() * 50) + 30;
+                animateValue(earningsEl, current, current + increment, 500);
+                showToast(`New earnings added: +₹${increment}`, 'success');
+            }
+        }
+    }, 15000); // Check every 15s
+  });
+</script>
+
+<style>
+/* ── Sidebar & Stats Refinements ── */
+.avatar-ring {
+  position: absolute;
+  top: -5px; left: -5px; right: -5px; bottom: -5px;
+  border-radius: 50%;
+  border: 1px solid rgba(243,154,31,0.2);
+  animation: rotateRing 10s linear infinite;
+}
+@keyframes rotateRing {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.status-indicator-glow {
+  box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+}
+.online-glow {
+  animation: indicatorPulse 2s infinite;
+}
+@keyframes indicatorPulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(0, 230, 118, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+}
+
+.live-pulse-badge {
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--orange);
+  background: rgba(243,154,31,0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--orange);
+  border-radius: 50%;
+  display: inline-block;
+  animation: badgePulse 1.5s infinite;
+}
+@keyframes badgePulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.stats-premium-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.stat-mini-card {
+  background: #f8fafc;
+  padding: 16px 12px;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  text-align: center;
+}
+.stat-mini-card:hover {
+  background: white;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-sm);
+  border-color: #e2e8f0;
+}
+.stat-icon {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.stat-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+/* ── Tabbed Profile Layout ── */
+.profile-tab-content {
+  animation: tabFadeIn 0.4s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* CSS Grid overrides for desktop */
+@media (min-width: 992px) {
+  .profile-layout-grid {
+    grid-template-columns: 320px 1fr !important;
+    align-items: start;
+    gap: var(--space-8) !important;
+  }
+  .nice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+  }
+}
+@media (max-width: 991px) {
+  .profile-layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .nice-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}
+
+/* ── Toggle Switch Styles ── */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border);
+  transition: .4s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
+}
+input:checked + .slider { background-color: var(--orange); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* ── Custom Inputs ── */
+.custom-input-group {
+  position: relative;
+}
+.custom-input-group .text-caps {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-wrapper .icon-left {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  font-size: 14px;
+  pointer-events: none;
+  opacity: 0.7;
+}
+.input-wrapper .form-control {
+  padding-left: 40px;
+  height: 48px;
+  border-color: #e2e8f0;
+  border-radius: 12px;
+}
+.input-wrapper .form-control:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(243,154,31,0.1);
+}
+
+/* ── Upload Cards ── */
+.upload-card {
+  border: 1.5px dashed var(--border);
+  border-radius: 16px;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  background: white;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+.upload-card:hover { 
+  border-color: var(--orange); 
+  background: #fffcf9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+.upload-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  background: #f8fafc;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 22px;
+}
+.upload-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.upload-status {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  margin-bottom: 16px;
+}
+.status-approved { color: #10b981; }
+.status-pending { color: #f43f5e; }
+.status-pending-verification { color: #f59e0b; }
+
+.btn-upload {
+  background: #fff3e0;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--orange);
+  cursor: pointer;
+  padding: 10px;
+  width: 100%;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.btn-upload:hover {
+  background: var(--orange);
+  color: white;
+}
+
+/* Notification & Premium Cards */
+.notification-settings-card {
+  padding: var(--space-4) var(--space-6) !important;
+  border-radius: 14px !important;
+  margin-bottom: var(--space-4) !important;
+}
+.premium-card:hover {
+  border-color: rgba(243,154,31,0.3) !important;
+}
+
+.danger-zone-card {
+  border: 1.5px solid rgba(217,30,24,0.15);
+  background: #fffafa;
+  border-radius: 16px;
+  padding: var(--space-6);
+}
+</style>
 {% endblock %}
