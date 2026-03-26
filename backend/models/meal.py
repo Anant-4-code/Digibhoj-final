@@ -35,6 +35,8 @@ class SubscriptionPlan(Base):
     description = Column(Text)
     price = Column(Float, nullable=False)
     duration = Column(String, default="weekly") # "weekly" or "monthly"
+    meals_per_day = Column(Integer, default=1)
+    duration_days = Column(Integer, default=7)  # 7 for weekly, 30 for monthly
     features = Column(JSON, default=[]) # List of Strings
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())

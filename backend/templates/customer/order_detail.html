@@ -23,40 +23,42 @@
   {% endif %}
 
   <div class="section-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-8)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-6)">
       <div>
-        <h2 style="margin-bottom:var(--space-1)">Provider: {{ order.provider.mess_name }}</h2>
-        <div style="color:var(--text-muted);font-size:var(--sm)">
+        <h2 style="margin-bottom:var(--space-1);font-size:1.5rem">Provider: {{ order.provider.mess_name }}</h2>
+        <div style="color:var(--text-muted);font-size:var(--xs);font-weight:600">
           Ordered on {{ order.created_at.strftime('%d %b %Y, %I:%M %p') if order.created_at else 'N/A' }}
         </div>
       </div>
-      <div>
-        <div class="status-badge status-{{ order.order_status.value }}">{{ order.order_status.value|replace('_', ' ')|title }}</div>
+      <div class="status-price-badge">
+        <span>{{ order.order_status.value|replace('_', ' ')|upper }}</span>
+        <span style="opacity:0.6">|</span>
+        <span>₹{{ order.total_price|int }}</span>
       </div>
     </div>
 
     <!-- Timeline Progress -->
     {% set s = order.order_status.value %}
-    <div class="status-progress">
-      <div class="status-step {% if s in ['created','confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s == 'created' %}active{% endif %}">
-        <div class="step-circle"><i class="fa fa-file-invoice"></i></div>
-        <div class="step-label">Placed</div>
+    <div class="status-tracking-row">
+      <div class="tracking-step {% if s in ['created','confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}completed{% endif %} {% if s == 'created' %}current{% endif %}">
+        <div class="tracking-dot"></div>
+        <div class="tracking-label">Placed</div>
       </div>
-      <div class="status-step {% if s in ['confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s == 'confirmed' %}active{% endif %}">
-        <div class="step-circle"><i class="fa fa-check"></i></div>
-        <div class="step-label">Confirmed</div>
+      <div class="tracking-step {% if s in ['confirmed','preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}completed{% endif %} {% if s == 'confirmed' %}current{% endif %}">
+        <div class="tracking-dot"></div>
+        <div class="tracking-label">Confirm</div>
       </div>
-      <div class="status-step {% if s in ['preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s in ['preparing','ready'] %}active{% endif %}">
-        <div class="step-circle"><i class="fa fa-fire-burner"></i></div>
-        <div class="step-label">Preparing</div>
+      <div class="tracking-step {% if s in ['preparing','ready','picked_up','out_for_delivery','delivered','completed'] %}completed{% endif %} {% if s in ['preparing','ready'] %}current{% endif %}">
+        <div class="tracking-dot"></div>
+        <div class="tracking-label">Preparing</div>
       </div>
-      <div class="status-step {% if s in ['picked_up','out_for_delivery','delivered','completed'] %}done{% endif %} {% if s in ['picked_up','out_for_delivery'] %}active{% endif %}">
-        <div class="step-circle"><i class="fa fa-motorcycle"></i></div>
-        <div class="step-label">On the Way</div>
+      <div class="tracking-step {% if s in ['picked_up','out_for_delivery','delivered','completed'] %}completed{% endif %} {% if s in ['picked_up','out_for_delivery'] %}current{% endif %}">
+        <div class="tracking-dot"></div>
+        <div class="tracking-label">OnWay</div>
       </div>
-      <div class="status-step {% if s in ['delivered','completed'] %}done{% endif %} {% if s == 'delivered' %}active{% endif %}">
-        <div class="step-circle"><i class="fa fa-box-open"></i></div>
-        <div class="step-label">Delivered</div>
+      <div class="tracking-step {% if s in ['delivered','completed'] %}completed{% endif %} {% if s == 'delivered' %}current{% endif %}">
+        <div class="tracking-dot"></div>
+        <div class="tracking-label">Delivered</div>
       </div>
     </div>
     
@@ -86,7 +88,7 @@
     <div class="section-card">
       <h3 class="section-card-title">Order Items</h3>
       <div style="display:flex;flex-direction:column;gap:var(--space-4)">
-        {% for item in order.order_items %}
+        {% for item in order.items %}
         <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:var(--space-4);border-bottom:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:var(--space-3)">
             <span class="badge {{ 'badge-veg' if item.meal.is_veg else 'badge-nonveg' }}" style="padding:4px;width:20px;height:20px;display:flex;justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span></span>
@@ -154,6 +156,14 @@
     </button>
   </div>
   {% endif %}
+  
+  {% if s not in ['delivered', 'completed', 'cancelled', 'failed'] %}
+  <div style="text-align:center;margin-top:var(--space-8)">
+    <button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="cancelOrder('{{ order.id }}')">
+      <i class="fa fa-times-circle"></i> Cancel Order
+    </button>
+  </div>
+  {% endif %}
 </main>
 
 <!-- Review Modal (Placeholder UI) -->
@@ -166,7 +176,7 @@
     <form action="/customer/action/order/review" method="POST">
       <input type="hidden" name="order_id" value="{{ order.id }}">
       <div style="text-align:center;font-size:3rem;color:var(--border);margin-bottom:var(--space-6);cursor:pointer;" id="starRating">
-        <span onclick="setRating(1)">★</span><span onclick="setRating(2)">★</span><span onclick="setRating(3)">★</span><span onclick="setRating(4)">★</span><span onclick="setRating(5)">★</span>
+        <i class="fa fa-star" onclick="setRating(1)"></i><i class="fa fa-star" onclick="setRating(2)"></i><i class="fa fa-star" onclick="setRating(3)"></i><i class="fa fa-star" onclick="setRating(4)"></i><i class="fa fa-star" onclick="setRating(5)"></i>
       </div>
       <input type="hidden" name="rating" id="ratingValue" value="0">
       <div class="floating-group">
@@ -193,6 +203,37 @@
       document.getElementById('reviewModal').classList.remove('open');
     });
   });
+
+  // Order Cancellation
+  async function cancelOrder(orderId) {
+    if(!confirm('Are you sure you want to cancel this order?')) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, { method: 'POST' });
+      const data = await res.json();
+      if(res.ok) {
+        alert('Order cancelled successfully');
+        window.location.reload();
+      } else {
+        alert(data.detail || 'Failed to cancel order');
+      }
+    } catch(e) {
+      alert('Error cancelling order');
+    }
+  }
+
+  // Real-time Status Polling
+  let currentStatus = "{{ order.order_status.value }}";
+  setInterval(async () => {
+    if(['delivered', 'completed', 'cancelled', 'failed'].includes(currentStatus)) return;
+    try {
+      const res = await fetch(`/api/orders/{{ order.id }}`);
+      const data = await res.json();
+      if(data.status && data.status !== currentStatus) {
+         // Optionally show a toast here, but reloading the page is cleaner to update all UI states
+         window.location.reload();
+      }
+    } catch(e) {}
+  }, 10000);
 </script>
 
 {% if s in ['picked_up','out_for_delivery'] %}

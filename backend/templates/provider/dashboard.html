@@ -174,7 +174,10 @@
                   {% elif o.order_status.value == 'confirmed' %}
                   <button type="submit" name="status" value="preparing" class="btn btn-outline btn-sm" style="padding:4px 8px;font-size:11px;border-color:var(--orange);color:var(--orange)">Start Prep</button>
                   {% elif o.order_status.value == 'preparing' %}
-                  <button type="submit" name="status" value="ready" class="btn btn-secondary btn-sm" style="padding:4px 8px;font-size:11px">Mark Ready</button>
+                  <button type="submit" name="status" value="ready" class="btn btn-secondary btn-sm" style="padding:4px 8px;font-size:11px;margin-right:4px">Mark Ready</button>
+                  <button type="button" class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:11px;background:var(--orange);color:white" onclick="assignRider({{ o.id }})">Assign Rider</button>
+                  {% elif o.order_status.value == 'ready' %}
+                  <button type="button" class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:11px;background:var(--orange);color:white" onclick="assignRider({{ o.id }})">Assign Rider</button>
                   {% else %}
                   <span style="font-size:11px;color:var(--text-muted)">No action</span>
                   {% endif %}
@@ -223,4 +226,26 @@
     </div>
   </main>
 </div>
+
+<script>
+async function assignRider(orderId) {
+    if(!confirm("Assign the nearest available delivery rider to this order?")) return;
+    try {
+        const res = await fetch('/api/provider/delivery/assign', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({order_id: orderId}) // Agent_id is optional now
+        });
+        if(res.ok) {
+            alert("Rider Assigned successfully! They will be notified.");
+            location.reload();
+        } else {
+            const data = await res.json();
+            alert("Could not assign: " + (data.detail || "Unknown error"));
+        }
+    } catch(e) {
+        alert("Network error. Please try again.");
+    }
+}
+</script>
 {% endblock %}

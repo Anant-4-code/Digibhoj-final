@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Subscription Tracking — {{ subscription.provider.mess_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.cal-day-header {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  position: relative;
+  transition: all 0.15s ease;
+  min-height: 40px;
+  border: 1.5px solid transparent;
+}
+.cal-cell:hover { background: var(--bg); transform: scale(1.08); }
+.cal-cell.today { border-color: var(--orange) !important; }
+.cal-cell.empty { cursor: default; }
+.cal-cell .status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  margin-top: 2px;
+}
+.status-scheduled .status-dot { background: #60a5fa; }
+.status-preparing .status-dot { background: var(--orange); }
+.status-delivered .status-dot { background: var(--green); }
+.status-cancelled .status-dot { background: #f87171; }
+
+.status-scheduled { background: rgba(96,165,250,0.08); }
+.status-preparing { background: rgba(255,126,0,0.08); }
+.status-delivered { background: rgba(8,201,82,0.08); }
+.status-cancelled { background: rgba(248,113,113,0.06); opacity: 0.65; }
+
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* Popup */
+.day-popup {
+  position: fixed;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  z-index: 999;
+  min-width: 220px;
+  max-width: 280px;
+  display: none;
+}
+.day-popup.open { display: block; animation: popIn 0.18s ease; }
+@keyframes popIn {
+  from { opacity:0; transform: scale(0.9); }
+  to { opacity:1; transform: scale(1); }
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<nav class="navbar" style="background:white;border-bottom:1px solid var(--border)">
+  <div style="display:flex;align-items:center;gap:var(--space-4)">
+    <a href="/customer/provider/{{ subscription.provider_id }}" style="color:var(--text)"><i class="fa fa-arrow-left"></i> Back</a>
+    <h1 style="font-size:1.2rem;margin:0;font-weight:700">Plan Tracking</h1>
+  </div>
+  <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+</nav>
+
+<main class="container page-enter" style="padding:var(--space-8) 0;max-width:760px">
+
+  <!-- Subscription Summary -->
+  <div class="section-card" style="margin-bottom:var(--space-6)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:var(--space-4)">
+      <div>
+        <h2 style="margin:0 0 var(--space-1);font-size:1.3rem">
+          {{ subscription.meal.name if subscription.meal else (subscription.plan.name if subscription.plan else subscription.plan_type.value|capitalize + " Plan") }}
+        </h2>
+        <div style="color:var(--text-muted);font-size:var(--sm)">
+          <i class="fa fa-store" style="color:var(--orange)"></i> {{ subscription.provider.mess_name }}
+          &nbsp;·&nbsp;
+          {{ subscription.start_date.strftime('%d %b') }} – {{ subscription.end_date.strftime('%d %b %Y') }}
+        </div>
+      </div>
+      <div>
+        {% set st = subscription.status.value %}
+        <span class="badge {% if st == 'active' %}badge-green{% elif st == 'cancelled' %}badge-red{% else %}badge-gray{% endif %}">
+          {{ st|upper }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Toggle -->
+  <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-5)">
+    <button id="btnCal" class="btn btn-primary btn-sm" onclick="switchView('calendar')"><i class="fa fa-calendar-alt"></i> Calendar</button>
+    <button id="btnList" class="btn btn-secondary btn-sm" onclick="switchView('list')"><i class="fa fa-list"></i> List</button>
+  </div>
+
+  <!-- Calendar View -->
+  <div id="calView" class="section-card">
+    <!-- Month Navigation -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
+      <button id="prevMonthBtn" class="btn btn-ghost btn-sm" onclick="changeMonth(-1)"><i class="fa fa-chevron-left"></i></button>
+      <div style="font-weight:700;font-size:1rem" id="monthLabel">Loading…</div>
+      <button id="nextMonthBtn" class="btn btn-ghost btn-sm" onclick="changeMonth(1)"><i class="fa fa-chevron-right"></i></button>
+    </div>
+
+    <!-- Day Headers -->
+    <div class="cal-grid" style="margin-bottom:4px">
+      {% for d in ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+      <div class="cal-day-header">{{ d }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="cal-grid" id="calGrid"></div>
+
+    <!-- Legend -->
+    <div style="display:flex;flex-wrap:wrap;gap:var(--space-4);margin-top:var(--space-5);padding-top:var(--space-4);border-top:1px dashed var(--border)">
+      <div style="display:flex;align-items:center;gap:6px;font-size:var(--xs)"><span class="legend-dot" style="background:#60a5fa"></span> Upcoming</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:var(--xs)"><span class="legend-dot" style="background:var(--orange)"></span> Preparing</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:var(--xs)"><span class="legend-dot" style="background:var(--green)"></span> Delivered</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:var(--xs)"><span class="legend-dot" style="background:#f87171"></span> Cancelled</div>
+    </div>
+  </div>
+
+  <!-- List View -->
+  <div id="listView" class="section-card" style="display:none">
+    <h3 class="section-card-title">All Deliveries</h3>
+    <div style="display:flex;flex-direction:column;gap:var(--space-3)" id="listContainer"></div>
+  </div>
+
+</main>
+
+<!-- Day Popup -->
+<div class="day-popup" id="dayPopup">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3)">
+    <div style="font-weight:700" id="popupDate"></div>
+    <button onclick="closePopup()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted)">×</button>
+  </div>
+  <div id="popupStatus" style="margin-bottom:var(--space-3)"></div>
+  <button id="popupCancelBtn" class="btn btn-ghost btn-sm btn-full" style="color:var(--red);border-color:var(--red);display:none" onclick="cancelDay()">
+    <i class="fa fa-times-circle"></i> Cancel This Meal
+  </button>
+</div>
+
+<script>
+// Deliveries data from backend
+const deliveries = {
+  {% for d in deliveries %}
+  "{{ d.date }}": { id: {{ d.id }}, status: "{{ d.status.value }}", order_id: {{ d.order_id or 'null' }} },
+  {% endfor %}
+};
+
+const today = new Date();
+today.setHours(0,0,0,0);
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth();
+let selectedDeliveryId = null;
+
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function dateStr(y,m,d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function renderCalendar() {
+  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth+1, 0).getDate();
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-cell empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = dateStr(currentYear, currentMonth, d);
+    const delivery = deliveries[ds];
+    const cell = document.createElement('div');
+    const cellDate = new Date(currentYear, currentMonth, d);
+    const isToday = cellDate.getTime() === today.getTime();
+
+    let cls = 'cal-cell';
+    if (delivery) cls += ' status-' + delivery.status;
+    if (isToday) cls += ' today';
+    if (!delivery) cls += ' empty';
+
+    cell.className = cls;
+    cell.innerHTML = `<span>${d}</span>${delivery ? '<div class="status-dot"></div>' : ''}`;
+
+    if (delivery) {
+      cell.addEventListener('click', (e) => showPopup(e, ds, delivery));
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+}
+
+function showPopup(e, dateString, delivery) {
+  e.stopPropagation();
+  selectedDeliveryId = delivery.id;
+  const popup = document.getElementById('dayPopup');
+  const [y,m,d] = dateString.split('-');
+  const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  document.getElementById('popupDate').textContent = `📅 ${dt.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}`;
+
+  const statusLabels = { scheduled:'🔵 Upcoming', preparing:'👨‍🍳 Preparing', delivered:'✅ Delivered', cancelled:'❌ Cancelled' };
+  document.getElementById('popupStatus').innerHTML = `<span style="font-size:var(--sm)">${statusLabels[delivery.status] || delivery.status}</span>`;
+
+  const cancelBtn = document.getElementById('popupCancelBtn');
+  cancelBtn.style.display = delivery.status === 'scheduled' ? 'block' : 'none';
+
+  popup.style.top = `${Math.min(e.clientY + 10, window.innerHeight - 180)}px`;
+  popup.style.left = `${Math.min(e.clientX + 10, window.innerWidth - 300)}px`;
+  popup.classList.add('open');
+}
+
+function closePopup() {
+  document.getElementById('dayPopup').classList.remove('open');
+  selectedDeliveryId = null;
+}
+
+async function cancelDay() {
+  if (!selectedDeliveryId) return;
+  if (!confirm('Cancel this day\'s meal?')) return;
+  try {
+    const res = await fetch(`/api/subscriptions/deliveries/${selectedDeliveryId}/cancel`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) { alert('Meal cancelled for this day.'); window.location.reload(); }
+    else alert(data.detail || 'Failed');
+  } catch(e) { alert('Error'); }
+}
+
+// List view rendering
+function renderList() {
+  const container = document.getElementById('listContainer');
+  container.innerHTML = '';
+  const statusIcon = { scheduled:'🔵', preparing:'🟡', delivered:'✅', cancelled:'❌' };
+  const statusLabel = { scheduled:'Upcoming', preparing:'Preparing', delivered:'Delivered', cancelled:'Cancelled' };
+  Object.entries(deliveries).sort().forEach(([ds, d]) => {
+    const [y,m,day] = ds.split('-');
+    const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(day));
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg)';
+    row.innerHTML = `
+      <div style="font-weight:600;font-size:var(--sm)">${dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      <div style="font-size:var(--xs);color:var(--text-muted)">${statusIcon[d.status]} ${statusLabel[d.status]}</div>
+      ${d.status === 'scheduled' ? `<button class="btn btn-ghost btn-xs" style="color:var(--red);font-size:10px" onclick="selectedDeliveryId=${d.id};cancelDay()">Cancel</button>` : '<div></div>'}
+    `;
+    container.appendChild(row);
+  });
+}
+
+function switchView(view) {
+  if (view === 'calendar') {
+    document.getElementById('calView').style.display = '';
+    document.getElementById('listView').style.display = 'none';
+    document.getElementById('btnCal').className = 'btn btn-primary btn-sm';
+    document.getElementById('btnList').className = 'btn btn-secondary btn-sm';
+    renderCalendar();
+  } else {
+    document.getElementById('calView').style.display = 'none';
+    document.getElementById('listView').style.display = '';
+    document.getElementById('btnCal').className = 'btn btn-secondary btn-sm';
+    document.getElementById('btnList').className = 'btn btn-primary btn-sm';
+    renderList();
+  }
+}
+
+// Close popup on outside click
+document.addEventListener('click', () => closePopup());
+
+// Initial render
+renderCalendar();
+
+// Poll for updates every 15 seconds if subscription is active
+{% if subscription.status.value == 'active' %}
+setInterval(() => window.location.reload(), 15000);
+{% endif %}
+</script>
+{% endblock %}

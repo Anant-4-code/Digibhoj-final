@@ -30,7 +30,10 @@ class Order(Base):
     payment_method = Column(String, default="Cash")
     order_status = Column(SAEnum(OrderStatus), default=OrderStatus.created)
     payment_status = Column(SAEnum(PaymentStatus), default=PaymentStatus.pending)
+    delivery_otp = Column(String(10), nullable=True)
     notes = Column(Text)
+    cancelled_by = Column(String, nullable=True) # e.g., "customer", "provider", "admin"
+    cancel_time = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

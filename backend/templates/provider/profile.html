@@ -1,19 +1,146 @@
 {% extends "base.html" %}
 {% block title %}Provider Profile{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* Base Variables & Theme */
+  :root {
+    --bg-page: #f5f6f8;
+    --bg-card: #ffffff;
+    --bg-input: #f1f3f5;
+    --text-main: #1f2937;
+    --text-muted: #6b7280;
+    --text-label: #8b92a5;
+    --accent: var(--orange, #f97316);
+    --accent-light: rgba(249, 115, 22, 0.1);
+    --border: #e5e7eb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+    --radius-card: 12px;
+    --radius-input: 6px;
+  }
+
+  /* Reset & Typography */
+  .main-content { background-color: var(--bg-page); min-height: 100vh; padding-bottom: 80px; font-family: 'Inter', -apple-system, sans-serif; }
+  .profile-container { width: 100%; max-width: 1400px; margin: 0 auto; padding: 24px; }
+  
+  /* Grid Layouts */
+  .layout-grid { display: grid; gap: 24px; margin-top: 24px; }
+  @media (min-width: 1100px) {
+    .layout-grid.top-row { grid-template-columns: 1.8fr 1fr; } /* Business (wider) | Bank (narrower) */
+    .layout-grid.mid-row { grid-template-columns: 1fr 1.2fr; } /* Kitchen (narrower) | Docs (wider) */
+    .layout-grid.bottom-row { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 1099px) {
+    .layout-grid.top-row, .layout-grid.mid-row, .layout-grid.bottom-row { grid-template-columns: 1fr; }
+  }
+
+  /* Cards */
+  .card-premium { background: var(--bg-card); border-radius: var(--radius-card); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.04); display: flex; flex-direction: column; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; margin: 0; }
+  .card-title i { font-size: 18px; }
+  .card-action { font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; }
+
+  /* Forms & Inputs */
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+  
+  .form-label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-label); margin-bottom: 8px; }
+  .form-control-premium { width: 100%; background-color: var(--bg-input); border: 1px solid transparent; border-radius: var(--radius-input); padding: 12px 14px; font-size: 14px; color: var(--text-main); font-weight: 500; transition: border 0.2s; outline: none; }
+  .form-control-premium:focus { border-color: var(--accent); background: white; }
+  textarea.form-control-premium { resize: vertical; min-height: 80px; line-height: 1.5; }
+  
+  /* Header Profile Block */
+  .profile-hero { background: white; border-radius: var(--radius-card); padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+  @media (max-width: 800px) { .profile-hero { flex-direction: column; align-items: flex-start; } .hero-actions { width: 100%; justify-content: stretch; } .hero-actions button { flex: 1; } }
+  
+  .hero-avatar { width: 90px; height: 90px; border-radius: 50%; background: linear-gradient(135deg, #111, #333); display: flex; align-items: center; justify-content: center; color: white; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; font-size: 32px; flex-shrink: 0; }
+  .hero-avatar-edit { position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white; cursor: pointer; }
+  
+  .hero-details { flex: 1; }
+  .hero-name-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .hero-name { font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0; }
+  .hero-badge { background: rgba(16,185,129,0.15); color: var(--success); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  
+  .hero-progress { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; max-width: 400px; }
+  .progress-bar-bg { flex: 1; height: 6px; background: var(--bg-input); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .progress-text { font-size: 12px; font-weight: 600; color: var(--text-main); }
+  
+  .hero-subtitle { font-size: 13px; color: var(--text-muted); margin: 0; }
+  
+  .hero-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-gray { background: #e5e7eb; color: var(--text-main); border: none; font-weight: 600; padding: 10px 20px; border-radius: 24px; cursor: pointer; }
+  .btn-orange-pill { background: var(--accent); color: white; border: none; font-weight: 600; padding: 10px 24px; border-radius: 24px; cursor: pointer; }
+
+  /* Custom Elements */
+  .info-box { background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 12px; display: flex; gap: 10px; font-size: 11px; color: #0d9488; align-items: flex-start; margin-top: auto; }
+  
+  /* Cuisine Pills fake input */
+  .cuisine-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-light); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .pill-add { background: var(--bg-input); color: var(--text-muted); border: 1px solid transparent; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  
+  /* Kitchen Hours */
+  .hours-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; font-size: 13px; }
+  @media (max-width: 600px) { .hours-grid { grid-template-columns: 1fr; } }
+  .hour-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+  .hour-day { color: var(--text-main); font-weight: 500; }
+  .hour-time { color: var(--accent); font-weight: 600; letter-spacing: 0.5px; }
+  
+  /* Docs Grid */
+  .docs-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; flex: 1; }
+  @media (max-width: 768px) { .docs-3 { grid-template-columns: 1fr; } }
+  .doc-card { background: var(--bg-input); border-radius: 8px; padding: 20px 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 140px; }
+  .doc-card.missing { background: white; border: 2px dashed #d1d5db; position: relative; }
+  .doc-icon { font-size: 24px; margin-bottom: 4px; }
+  .doc-icon.verified { color: var(--success); }
+  .doc-title { font-size: 12px; font-weight: 700; color: var(--text-main); margin: 0; }
+  .doc-status { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .doc-status.verified { color: var(--success); }
+  
+  /* Toggles */
+  .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .setting-row:last-child { margin-bottom: 0; }
+  .setting-text h4 { margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: var(--text-main); }
+  .setting-text p { margin: 0; font-size: 12px; color: var(--text-muted); }
+  
+  .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d5db; transition: .3s; border-radius: 24px; }
+  .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  input:checked + .toggle-slider { background-color: var(--accent); }
+  input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+  /* Danger Card */
+  .danger-card { background: var(--danger-light); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: var(--radius-card); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .danger-info { display: flex; gap: 16px; align-items: center; }
+  .danger-icon { color: var(--danger); font-size: 20px; }
+  .danger-text h4 { margin: 0 0 4px 0; font-size: 14px; font-weight: 700; color: var(--danger); }
+  .danger-text p { margin: 0; font-size: 12px; color: #991b1b; }
+  
+  /* Sticky Footer */
+  .sticky-footer { position: fixed; bottom: 0; right: 0; left: 250px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; z-index: 100; }
+  @media (max-width: 768px) { .sticky-footer { left: 0; padding: 12px 20px; } }
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="app-layout">
   
-  <nav class="navbar" style="background:var(--orange)">
+  <nav class="navbar" style="background:var(--orange, #F39A1F)">
     <div style="display:flex;align-items:center;gap:var(--space-4)">
-      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
-      <a href="/provider/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Partner</a>
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars" style="color:white"></i></button>
+      <a href="/provider/dashboard" class="navbar-brand" style="color:white">Digi<span>Bhoj</span> Partner</a>
     </div>
     <div class="navbar-actions">
       <div class="dropdown" data-dropdown>
         <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
           <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
-            <i class="fa fa-store"></i>
+            <i class="fa fa-utensils"></i>
           </div>
           <span style="font-size:var(--sm);font-weight:500">{{ provider.mess_name[:15] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
         </div>
@@ -23,9 +150,6 @@
       </div>
     </div>
   </nav>
-
-  <!-- Mobile Overlay -->
-  <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-section">Management</div>
@@ -50,87 +174,443 @@
     </a>
   </aside>
 
-  <main class="main-content page-enter">
-    <div class="page-header">
-      <h1>Provider Profile</h1>
-      <p>Manage your mess information and business details</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 2fr;gap:var(--space-8)">
+  <main class="main-content">
+    <div class="profile-container">
       
-      <!-- Store Info Card -->
-      <div class="section-card" style="align-self:start;text-align:center">
-        <div class="avatar avatar-xl" style="margin:0 auto var(--space-4);background:rgba(243,154,31,0.15);color:var(--orange)">
-          <i class="fa fa-store"></i>
-        </div>
-        <h2 style="margin-bottom:var(--space-1)">{{ provider.mess_name }}</h2>
-        <div style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">
-          <div class="status-badge status-{{ provider.verification_status.value }}" style="margin-top:var(--space-2)">
-            Provider {{ provider.verification_status.value|title }}
+      <!-- HEADER HERO -->
+      <div class="profile-hero">
+        <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; flex:1;">
+          <div class="hero-avatar">
+            <i class="fa fa-store"></i>
+            <div class="hero-avatar-edit"><i class="fa fa-pen"></i></div>
+          </div>
+          <div class="hero-details">
+            <div class="hero-name-row">
+              <h1 class="hero-name" id="display_name">Loading...</h1>
+              <span class="hero-badge"><i class="fa fa-check-circle" style="margin-right:2px"></i> Verified Merchant</span>
+            </div>
+            <div class="hero-progress">
+              <div class="progress-bar-bg">
+                <div class="progress-fill" id="completion_bar" style="width:0%"></div>
+              </div>
+              <span class="progress-text"><span id="completion_text">0%</span> Complete</span>
+            </div>
+            <p class="hero-subtitle">Precision Hospitality Partner since Oct 2023</p>
           </div>
         </div>
-        
-        <div style="text-align:left;font-size:var(--sm)">
-          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text-muted);display:block">Owner Name</strong>
-            {{ user.name }}
-          </div>
-          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text-muted);display:block">Email</strong>
-            {{ user.email }}
-          </div>
-          <div style="padding:var(--space-3) 0;border-bottom:1px solid var(--border)">
-            <strong style="color:var(--text-muted);display:block">Member Since</strong>
-            {{ user.created_at.strftime('%B %Y') if user.created_at else 'N/A' }}
-          </div>
+        <div class="hero-actions">
+          <a href="/provider/analytics" class="btn-gray"><i class="fa fa-chart-bar"></i> Analytics</a>
+          <a href="/logout" class="btn-orange-pill"><i class="fa fa-sign-out-alt" style="margin-right:4px"></i> Logout</a>
         </div>
-        
-        <a href="/logout" class="btn btn-outline btn-full" style="color:var(--red);border-color:var(--red);margin-top:var(--space-6)">
-          <i class="fa fa-sign-out-alt"></i> Logout
-        </a>
       </div>
 
-      <!-- Settings Form -->
-      <div class="section-card">
-        <h3 class="section-card-title">Business Settings</h3>
+      <!-- ROW 1: Busines & Bank -->
+      <div class="layout-grid top-row">
+        <!-- Business Details -->
+        <div class="card-premium">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa fa-store"></i> Business Info</h2>
+            <span class="card-action">Edit</span>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Business Name</label>
+              <input type="text" id="mess_name" class="form-control-premium" value="Loading...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Primary Phone</label>
+              <input type="tel" id="phone" class="form-control-premium" value="">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Cuisine Specialties</label>
+            <div class="cuisine-pills" id="cuisine_pills_container">
+              <!-- JS Rendered -->
+            </div>
+            <input type="hidden" id="cuisine_type" value="">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">About Your Kitchen</label>
+            <textarea id="description" class="form-control-premium"></textarea>
+          </div>
+          
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Full Business Address</label>
+            <input type="text" id="location" class="form-control-premium" value="">
+            <input type="hidden" id="latitude">
+            <input type="hidden" id="longitude">
+          </div>
+        </div>
         
-        <form action="/provider/action/profile/update" method="POST">
-          <div class="form-group">
-            <label class="form-label" for="mess_name">Mess Name</label>
-            <input type="text" id="mess_name" name="mess_name" class="form-control" value="{{ provider.mess_name }}" required>
+        <!-- Bank Details -->
+        <div class="card-premium">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa fa-university"></i> Bank Details</h2>
+            <i class="fa fa-check-circle" style="color:var(--success); font-size:16px;"></i>
           </div>
           
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
-            <div class="form-group">
-              <label class="form-label" for="phone">Phone Number</label>
-              <input type="tel" id="phone" name="phone" class="form-control" value="{{ provider.phone }}" required>
+          <div class="form-group">
+            <label class="form-label">Account Holder</label>
+            <input type="text" id="account_name" class="form-control-premium" value="">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Bank Name</label>
+            <input type="text" id="bank_name" class="form-control-premium" value="">
+          </div>
+          
+          <div class="form-row" style="margin-bottom:24px;">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Account Number</label>
+              <input type="password" id="account_number" class="form-control-premium" value="1234567890">
             </div>
-            <div class="form-group">
-              <label class="form-label" for="cuisine_type">Cuisine Type</label>
-              <input type="text" id="cuisine_type" name="cuisine_type" class="form-control" value="{{ provider.cuisine_type }}" required>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">IFSC Code</label>
+              <input type="text" id="ifsc_code" class="form-control-premium" value="">
             </div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label" for="operating_hours">Operating Hours</label>
-            <input type="text" id="operating_hours" name="operating_hours" class="form-control" value="{{ provider.operating_hours }}" required>
+          <div class="info-box">
+            <i class="fa fa-info-circle" style="margin-top:2px;"></i>
+            <span>Payments are processed every Wednesday at 10:00 AM IST for the previous week's cycles.</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ROW 2: Hours & Docs -->
+      <div class="layout-grid mid-row">
+        <!-- Kitchen Hours -->
+        <div class="card-premium">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa fa-clock"></i> Kitchen Hours</h2>
+            <div class="hero-badge" style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;"><div style="width:6px;height:6px;background:#2e7d32;border-radius:50%;display:inline-block;margin-right:4px;"></div>OPEN NOW</div>
           </div>
           
-          <div class="form-group">
-            <label class="form-label" for="location">Business Address & Location</label>
-            <textarea id="location" name="location" class="form-control" rows="2" required>{{ provider.location }}</textarea>
+          <div class="hours-grid">
+            <div class="hour-col-1">
+              <div class="hour-row"><span class="hour-day">Monday</span><span class="hour-time">09:00 - 22:00</span></div>
+              <div class="hour-row"><span class="hour-day">Tuesday</span><span class="hour-time">09:00 - 22:00</span></div>
+              <div class="hour-row"><span class="hour-day">Wednesday</span><span class="hour-time">09:00 - 22:00</span></div>
+              <div class="hour-row"><span class="hour-day">Thursday</span><span class="hour-time">09:00 - 22:00</span></div>
+            </div>
+            <div class="hour-col-2">
+              <div class="hour-row"><span class="hour-day">Friday</span><span class="hour-time">09:00 - 23:30</span></div>
+              <div class="hour-row"><span class="hour-day">Saturday</span><span class="hour-time">10:00 - 23:30</span></div>
+              <div class="hour-row"><span class="hour-day">Sunday</span><span class="hour-time">10:00 - 21:00</span></div>
+              
+              <button class="form-control-premium" style="margin-top:12px; font-size:10px; font-weight:700; text-transform:uppercase; color:var(--accent); text-align:center; cursor:pointer;" onclick="openModal('hoursModal')">Manage Holidays</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Compliance & Docs -->
+        <div class="card-premium">
+          <div class="card-header">
+            <h2 class="card-title"><i class="fa fa-check-square"></i> Compliance & Docs</h2>
           </div>
           
-          <div class="form-group">
-            <label class="form-label" for="description">About the Mess</label>
-            <textarea id="description" name="description" class="form-control" rows="4">{{ provider.description }}</textarea>
+          <div class="docs-3">
+            <div class="doc-card">
+              <i class="fa fa-id-card doc-icon verified"></i>
+              <div class="doc-title">Aadhaar Card</div>
+              <div class="doc-status verified">Verified</div>
+              <input type="file" id="file_aadhaar" style="display:none" onchange="uploadDoc('aadhaar', this)">
+            </div>
+            
+            <div class="doc-card">
+              <i class="fa fa-utensils doc-icon verified"></i>
+              <div class="doc-title">FSSAI License</div>
+              <div class="doc-status verified" style="color:#059669">Active</div>
+              <input type="file" id="file_fssai" style="display:none" onchange="uploadDoc('fssai', this)">
+            </div>
+            
+            <div class="doc-card missing" onclick="document.getElementById('file_business_license').click()" style="cursor:pointer">
+              <i class="fa fa-file-invoice doc-icon" style="color:var(--accent)"></i>
+              <div class="doc-title">GST Certificate</div>
+              <div class="doc-status" style="color:var(--accent)">Optional</div>
+              <div style="background:var(--accent);color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:12px;margin-top:6px;">UPLOAD</div>
+              <input type="file" id="file_business_license" style="display:none" onchange="uploadDoc('business_license', this)">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ROW 3: Settings & Danger Zone -->
+      <div class="layout-grid bottom-row">
+        <!-- Automation Settings -->
+        <div class="card-premium">
+          <div class="card-header" style="margin-bottom: 24px;">
+            <h2 class="card-title"><i class="fa fa-cog"></i> Automation Settings</h2>
           </div>
           
-          <button type="submit" class="btn btn-primary" style="margin-top:var(--space-4)">Save Business Details</button>
-        </form>
+          <div class="setting-row">
+            <div class="setting-text">
+              <h4>Vacation Mode</h4>
+              <p>Temporarily hide your kitchen from new orders.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="vacation_mode">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-row">
+            <div class="setting-text">
+              <h4>Auto-Accept Orders</h4>
+              <p>Skip manual review for standard orders.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="auto_accept_orders" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          
+          <div class="setting-row">
+            <div class="setting-text">
+              <h4>SMS Notifications</h4>
+              <p>Receive instant alerts for urgent cancellations.</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sms_notifications" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Advanced Actions -->
+        <div class="danger-card" onclick="openModal('dangerModal')">
+          <div class="danger-info">
+            <i class="fa fa-exclamation-triangle danger-icon"></i>
+            <div class="danger-text">
+              <h4>Advanced Actions</h4>
+              <p>Manage account deletion or permanent deactivation</p>
+            </div>
+          </div>
+          <i class="fa fa-chevron-down" style="color:#ef4444;font-size:14px;"></i>
+        </div>
+        
       </div>
 
     </div>
   </main>
+  
+  <div class="sticky-footer" id="stickyFooter">
+    <button class="btn btn-outline" style="border:1px solid #d1d5db; background:white; color:#374151; font-weight:600; padding:10px 24px; border-radius:24px; font-size:14px;" onclick="fetchProfileData()">Discard changes</button>
+    <button class="btn btn-primary" style="background:var(--accent); border:none; padding:10px 24px; border-radius:24px; font-weight:600; font-size:14px;" onclick="saveAllChanges()" id="btnSaveAll">Save Settings</button>
+  </div>
 </div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="hoursModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="card-premium" style="width:100%;max-width:400px;margin:20px;">
+    <div class="card-header"><h2 class="card-title">Manage Operating Hours</h2></div>
+    <div class="form-group"><label class="form-label">Update Schedule</label>
+    <input type="text" id="hours_input" class="form-control-premium" placeholder="e.g. 9 AM - 10 PM"></div>
+    <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn-gray" onclick="closeModal('hoursModal')">Cancel</button>
+      <button class="btn-orange-pill" onclick="saveHours()">Update</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dangerModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+  <div class="card-premium" style="width:100%;max-width:400px;margin:20px;">
+    <div class="card-header"><h2 class="card-title" style="color:red">Danger Zone</h2></div>
+    <p style="font-size:14px;margin-bottom:20px;">Are you sure you want to completely delete your account? This action is irreversible.</p>
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+      <button class="btn-gray" onclick="closeModal('dangerModal')">Cancel</button>
+      <button class="btn-orange-pill" style="background:red;" onclick="deleteAccount()">Delete Account</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let rawSchedule = "{}";
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchProfileData();
+    setInterval(fetchProfileData, 30000); // 30s is enough for background refresh
+  });
+
+  async function fetchProfileData() {
+    try {
+      const res = await fetch('/api/provider/profile/data');
+      if(!res.ok) {
+        if(res.status === 401) window.location.href = '/login';
+        return;
+      }
+      
+      const data = await res.json();
+      
+      // Update Hero
+      document.getElementById('display_name').textContent = data.basic_info.mess_name || 'Your Mess Name';
+      document.getElementById('completion_text').textContent = data.completion_percentage + '%';
+      document.getElementById('completion_bar').style.width = data.completion_percentage + '%';
+
+      // Only update fields if user isn't typing
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+      
+      if(!isTyping) {
+        // Basic Info
+        document.getElementById('mess_name').value = data.basic_info.mess_name || '';
+        document.getElementById('phone').value = data.basic_info.phone || '';
+        document.getElementById('cuisine_type').value = data.basic_info.cuisine_type || '';
+        renderCuisines(data.basic_info.cuisine_type || '');
+        document.getElementById('description').value = data.basic_info.description || '';
+        document.getElementById('location').value = data.basic_info.location || '';
+        
+        rawSchedule = data.basic_info.operating_hours || "{}";
+        document.getElementById('hours_input').value = rawSchedule;
+        
+        // Bank Info
+        if(data.bank) {
+          document.getElementById('account_name').value = data.bank.account_name || '';
+          document.getElementById('account_number').value = data.bank.account_number || '';
+          document.getElementById('ifsc_code').value = data.bank.ifsc_code || '';
+          document.getElementById('bank_name').value = data.bank.bank_name || '';
+        }
+
+        // Settings
+        document.getElementById('vacation_mode').checked = data.settings.vacation_mode;
+        document.getElementById('auto_accept_orders').checked = data.settings.auto_accept_orders;
+        document.getElementById('sms_notifications').checked = data.settings.sms_notifications;
+      }
+    } catch(e) {
+      console.error("Failed to fetch profile data:", e);
+    }
+  }
+
+  async function saveAllChanges() {
+    const btn = document.getElementById('btnSaveAll');
+    const originalText = btn.textContent;
+    btn.textContent = "Saving...";
+    btn.disabled = true;
+    
+    // Prepare Bank Payload
+    const accNumEl = document.getElementById('account_number');
+    const bankPayload = {
+      account_name: document.getElementById('account_name').value,
+      account_number: accNumEl.value, // Backend handles masking protection
+      ifsc_code: document.getElementById('ifsc_code').value,
+      bank_name: document.getElementById('bank_name').value
+    };
+
+    try {
+      const responses = await Promise.all([
+        fetch('/api/provider/profile/basic', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({
+            mess_name: document.getElementById('mess_name').value,
+            phone: document.getElementById('phone').value,
+            cuisine_type: document.getElementById('cuisine_type').value,
+            description: document.getElementById('description').value,
+            operating_hours: rawSchedule,
+            location: document.getElementById('location').value
+          }) 
+        }),
+        fetch('/api/provider/profile/bank', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify(bankPayload) 
+        }),
+        fetch('/api/provider/profile/settings', { 
+          method: 'POST', 
+          headers: {'Content-Type': 'application/json'}, 
+          body: JSON.stringify({
+            vacation_mode: document.getElementById('vacation_mode').checked,
+            auto_accept_orders: document.getElementById('auto_accept_orders').checked,
+            sms_notifications: document.getElementById('sms_notifications').checked,
+            email_notifications: true
+          }) 
+        })
+      ]);
+
+      const allOk = responses.every(r => r.ok);
+      if(allOk) {
+        _showToast("All settings saved successfully!", "success");
+        fetchProfileData();
+      } else {
+        const errorMsg = responses.find(r => !r.ok)?.statusText || "Update failed";
+        _showToast("Some updates failed: " + errorMsg, "error");
+      }
+    } catch(e) {
+      _showToast("Network error occurred while saving.", "error");
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  function renderCuisines(str) {
+    const container = document.getElementById('cuisine_pills_container');
+    container.innerHTML = '';
+    const cuisines = str ? str.split(',').map(c => c.trim()).filter(c => c) : [];
+    
+    cuisines.forEach(c => {
+      const pill = document.createElement('div');
+      pill.className = 'pill';
+      pill.textContent = c;
+      container.appendChild(pill);
+    });
+
+    const addBtn = document.createElement('div');
+    addBtn.className = 'pill-add';
+    addBtn.textContent = '+ Add';
+    addBtn.onclick = () => {
+      const p = prompt('Add cuisine specialized in:');
+      if(p && p.trim()) {
+        const current = document.getElementById('cuisine_type').value;
+        const updated = current ? `${current}, ${p.trim()}` : p.trim();
+        document.getElementById('cuisine_type').value = updated;
+        renderCuisines(updated);
+      }
+    };
+    container.appendChild(addBtn);
+  }
+
+  async function uploadDoc(type, inputEl) {
+    if(!inputEl.files[0]) return;
+    const formData = new FormData();
+    formData.append('document_type', type);
+    formData.append('file', inputEl.files[0]);
+
+    try {
+      const res = await fetch('/api/provider/profile/document', { method: 'POST', body: formData });
+      if(res.ok) {
+        _showToast("Document uploaded! Waiting for verification.", "success");
+        fetchProfileData();
+      } else {
+        _showToast("Upload failed.", "error");
+      }
+    } catch(e) { _showToast("Upload error.", "error"); }
+  }
+
+  function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+  
+  function saveHours() {
+    rawSchedule = document.getElementById('hours_input').value;
+    closeModal('hoursModal');
+    _showToast("Schedule updated in draft.", "info");
+  }
+
+  async function deleteAccount() {
+    if(!confirm("Are you ABSOLUTELY sure? This cannot be undone.")) return;
+    try {
+      const res = await fetch('/api/provider/account/delete', { method: 'DELETE' });
+      if(res.ok) window.location.href = "/login?msg=Account+deleted";
+    } catch(e) { _showToast("Error deleting account", "error"); }
+  }
+
+  // Re-use Toast helper from order-polling or define if missing
+  function _showToast(m, t) {
+    if(window.showToast) window.showToast(m, t);
+    else alert(`${t.toUpperCase()}: ${m}`);
+  }
+</script>
 {% endblock %}

@@ -5,11 +5,35 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.dependencies import get_current_user_from_request
 from backend.models import (Provider, Meal, Order, Customer, CartItem, DeliveryAgent,
-                            DeliveryAssignment, Review, Payment, SubscriptionPlan,
-                            VerificationStatus, DeliveryVerification, OrderStatus, MealCategory, AgentStatus)
+                            DeliveryAssignment, Review, Payment, SubscriptionPlan, Subscription, SubscriptionStatus,
+                            VerificationStatus, DeliveryVerification, OrderStatus, MealCategory, AgentStatus, Notification)
 import os
+import json
+from datetime import datetime
 
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "..", "templates"))
+
+def format_hours_filter(hours_str):
+    if not hours_str:
+        return "9 AM - 9 PM"
+    try:
+        # Try parsing as JSON
+        if hours_str.strip().startswith('{'):
+            data = json.loads(hours_str)
+            today = datetime.now().strftime("%A")
+            if today in data:
+                day_info = data[today]
+                if day_info.get("open"):
+                    return f"Open Today: {day_info.get('hours', '9 AM - 9 PM')}"
+                return "Closed Today"
+            # Fallback for JSON if today is missing
+            first_day = next(iter(data.values()), {})
+            return first_day.get("hours", "9 AM - 9 PM")
+        return hours_str
+    except Exception:
+        return hours_str
+
+templates.env.filters["format_hours"] = format_hours_filter
 
 router = APIRouter(tags=["ui"])
 
@@ -88,10 +112,14 @@ def customer_home(request: Request, q: str = "", cuisine: str = "", db: Session 
         
     providers = query.all()
     cart_count = 0
+    notifications = []
     if user and user.customer:
         cart_count = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).count()
+        notifications = db.query(Notification).filter(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10).all()
+        
     return templates.TemplateResponse("customer/home.html", {
         "request": request, "user": user, "providers": providers, "cart_count": cart_count,
+        "notifications": notifications,
         "q": q, "cuisine": cuisine
     })
 
@@ -104,11 +132,61 @@ def customer_provider_detail(provider_id: int, request: Request, db: Session = D
     meals = db.query(Meal).filter(Meal.provider_id == provider_id, Meal.is_available == True).all()
     reviews = provider.reviews[-5:] if provider.reviews else []
     cart_count = 0
+    subscription_plans = db.query(SubscriptionPlan).filter(
+        SubscriptionPlan.provider_id == provider_id,
+        SubscriptionPlan.is_active == True
+    ).all()
+    
+    active_subscription = None
+    notifications = []
     if user and user.customer:
         cart_count = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).count()
+        notifications = db.query(Notification).filter(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10).all()
+        active_subscription = db.query(Subscription).filter(
+            Subscription.customer_id == user.customer.id,
+            Subscription.provider_id == provider_id,
+            Subscription.status == SubscriptionStatus.active
+        ).first()
     return templates.TemplateResponse("customer/provider_detail.html", {
         "request": request, "user": user, "provider": provider, "meals": meals,
-        "reviews": reviews, "cart_count": cart_count
+        "reviews": reviews, "cart_count": cart_count,
+        "notifications": notifications,
+        "subscription_plans": subscription_plans,
+        "active_subscription": active_subscription
+    })
+
+@router.get("/customer/subscriptions", response_class=HTMLResponse)
+def customer_subscriptions_list(request: Request, db: Session = Depends(get_db)):
+    """Show all subscriptions for the logged-in customer."""
+    user = get_user(request, db)
+    if not user or not user.customer:
+        return RedirectResponse("/login")
+    subs = db.query(Subscription).filter(
+        Subscription.customer_id == user.customer.id
+    ).order_by(Subscription.created_at.desc()).all()
+    cart_count = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).count()
+    notifications = db.query(Notification).filter(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10).all()
+    return templates.TemplateResponse("customer/subscriptions_list.html", {
+        "request": request, "user": user, "subscriptions": subs, "cart_count": cart_count,
+        "notifications": notifications
+    })
+
+@router.get("/customer/subscriptions/{sub_id}", response_class=HTMLResponse)
+def customer_subscription_calendar(sub_id: int, request: Request, db: Session = Depends(get_db)):
+    user = get_user(request, db)
+    if not user or not user.customer:
+        return RedirectResponse("/login")
+    sub = db.query(Subscription).filter(
+        Subscription.id == sub_id,
+        Subscription.customer_id == user.customer.id
+    ).first()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    deliveries = sorted(sub.deliveries, key=lambda d: d.date)
+    cart_count = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).count()
+    return templates.TemplateResponse("customer/subscriptions.html", {
+        "request": request, "user": user, "subscription": sub,
+        "deliveries": deliveries, "cart_count": cart_count
     })
 
 @router.post("/customer/action/cart/add")
@@ -138,9 +216,10 @@ def cart_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
     items = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).all()
     total = sum(i.meal.price * i.quantity for i in items)
+    notifications = db.query(Notification).filter(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10).all()
     return templates.TemplateResponse("customer/cart.html", {
         "request": request, "user": user, "items": items, "total": total,
-        "cart_count": len(items)
+        "cart_count": len(items), "notifications": notifications
     })
 
 @router.post("/customer/action/cart/update")
@@ -226,8 +305,10 @@ def customer_orders(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login")
     orders = db.query(Order).filter(Order.customer_id == user.customer.id).order_by(Order.created_at.desc()).all()
     cart_count = db.query(CartItem).filter(CartItem.customer_id == user.customer.id).count()
+    notifications = db.query(Notification).filter(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10).all()
     return templates.TemplateResponse("customer/orders.html", {
-        "request": request, "user": user, "orders": orders, "cart_count": cart_count
+        "request": request, "user": user, "orders": orders, "cart_count": cart_count,
+        "notifications": notifications
     })
 
 @router.get("/customer/order/{order_id}", response_class=HTMLResponse)
@@ -353,13 +434,18 @@ async def add_plan_action(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     features_raw = form.get("features", "")
     features_list = [f.strip() for f in features_raw.split(",") if f.strip()]
-    
+    duration = form.get("duration", "weekly")
+    duration_days = 7 if duration == "weekly" else 30
+    meals_per_day = int(form.get("meals_per_day", 1))
+
     plan = SubscriptionPlan(
         provider_id=user.provider.id,
         name=form.get("name"),
         description=form.get("description", ""),
         price=float(form.get("price", 0)),
-        duration=form.get("duration", "weekly"),
+        duration=duration,
+        duration_days=duration_days,
+        meals_per_day=meals_per_day,
         features=features_list,
         is_active=True
     )
@@ -376,10 +462,13 @@ async def update_plan_action(plan_id: int, request: Request, db: Session = Depen
     if plan:
         form = await request.form()
         features_raw = form.get("features", "")
+        duration = form.get("duration", plan.duration)
         plan.name = form.get("name")
         plan.description = form.get("description")
         plan.price = float(form.get("price"))
-        plan.duration = form.get("duration")
+        plan.duration = duration
+        plan.duration_days = 7 if duration == "weekly" else 30
+        plan.meals_per_day = int(form.get("meals_per_day", plan.meals_per_day or 1))
         plan.features = [f.strip() for f in features_raw.split(",") if f.strip()]
         db.commit()
     return RedirectResponse("/provider/menu?success=Plan updated!", status_code=302)
@@ -554,8 +643,20 @@ def delivery_profile(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
     if not user or not user.delivery_agent:
         return RedirectResponse("/login")
+    agent = user.delivery_agent
+    assignments = db.query(DeliveryAssignment).filter(DeliveryAssignment.agent_id == agent.id).all()
+    total_orders = len(assignments)
+    completed_orders = sum(1 for a in assignments if a.status.value == "completed")
+    # Simulate a small cancel rate or calculate if cancellations exist
+    cancelled_orders = sum(1 for a in assignments if a.status.value == "cancelled")
+    cancel_rate = round((cancelled_orders / total_orders * 100) if total_orders > 0 else 0, 1)
+    
     return templates.TemplateResponse("delivery/profile.html", {
-        "request": request, "user": user, "agent": user.delivery_agent
+        "request": request, "user": user, "agent": agent,
+        "total_orders": total_orders,
+        "completed_orders": completed_orders,
+        "cancel_rate": cancel_rate,
+        "rating": agent.rating if getattr(agent, 'rating', None) else 4.8
     })
 
 @router.post("/delivery/action/profile/update")

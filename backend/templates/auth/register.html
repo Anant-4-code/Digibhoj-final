@@ -124,9 +124,25 @@
 
       <!-- Role Specific Fields -->
       {% if role == 'customer' %}
-      <div class="floating-group">
-        <textarea name="address" id="address" class="floating-input" placeholder=" " required></textarea>
-        <label for="address" class="floating-label">Delivery Address</label>
+      <div class="address-selector-container">
+        <label class="floating-label" style="top: -1.2rem; font-size: 0.8rem; color: var(--green-dark); font-weight: 600;">Delivery Address</label>
+        <div class="address-grid" style="margin-top: 1rem;">
+          <select class="address-state floating-input" style="padding-top: 1.2rem; height: 3.5rem;">
+            <option value="">-- State --</option>
+          </select>
+          <select class="address-city floating-input" style="padding-top: 1.2rem; height: 3.5rem;" disabled>
+            <option value="">-- City --</option>
+          </select>
+        </div>
+        <div class="floating-group" style="margin-top: 1rem;">
+          <textarea class="detailed-address floating-input" placeholder=" " style="min-height: 80px; padding-top: 1.5rem;"></textarea>
+          <label class="floating-label">Area, House No, Landmark</label>
+        </div>
+        <input type="hidden" name="address" class="full-address-input" required>
+        <div class="address-actions" style="margin-top: 0.5rem; justify-content: flex-start; gap: 0.5rem;">
+          <button type="button" class="btn-get-location address-btn"><i class="fa fa-location-arrow"></i> Location</button>
+          <button type="button" class="btn-pick-map address-btn"><i class="fa fa-map-marked-alt"></i> Map</button>
+        </div>
       </div>
       
       {% elif role == 'provider' %}
@@ -134,9 +150,24 @@
         <input type="text" name="mess_name" id="mess_name" class="floating-input" placeholder=" " required>
         <label for="mess_name" class="floating-label">Mess Name</label>
       </div>
-      <div class="floating-group">
-        <input type="text" name="location" id="location" class="floating-input" placeholder=" " required>
-        <label for="location" class="floating-label">Mess Location / Area</label>
+      <div class="address-selector-container">
+        <label class="floating-label" style="top: -1.2rem; font-size: 0.8rem; color: var(--green-dark); font-weight: 600;">Mess Location / Area</label>
+        <div class="address-grid" style="margin-top: 1rem;">
+          <select class="address-state floating-input" style="padding-top: 1.2rem; height: 3.5rem;">
+            <option value="">-- State --</option>
+          </select>
+          <select class="address-city floating-input" style="padding-top: 1.2rem; height: 3.5rem;" disabled>
+            <option value="">-- City --</option>
+          </select>
+        </div>
+        <div class="floating-group" style="margin-top: 1rem;">
+          <textarea class="detailed-address floating-input" placeholder=" " style="min-height: 80px; padding-top: 1.5rem;"></textarea>
+          <label class="floating-label">Mess Specific Address</label>
+        </div>
+        <input type="hidden" name="location" class="full-address-input" required>
+        <div class="address-actions" style="margin-top: 0.5rem; justify-content: flex-start; gap: 0.5rem;">
+          <button type="button" class="btn-get-location address-btn"><i class="fa fa-location-arrow"></i> Location</button>
+        </div>
       </div>
       <div class="floating-group">
         <select name="cuisine_type" id="cuisine_type" class="floating-input" required style="padding-top:1.2rem">
@@ -171,9 +202,24 @@
         <input type="text" name="license_number" id="license_number" class="floating-input" placeholder=" " required>
         <label for="license_number" class="floating-label">Driving License Number</label>
       </div>
-      <div class="floating-group">
-        <input type="text" name="service_area" id="service_area" class="floating-input" placeholder=" " required>
-        <label for="service_area" class="floating-label">Preferred Service Area (e.g., Kothrud, Pune)</label>
+      <div class="address-selector-container">
+        <label class="floating-label" style="top: -1.2rem; font-size: 0.8rem; color: var(--green-dark); font-weight: 600;">Preferred Service Area</label>
+        <div class="address-grid" style="margin-top: 1rem;">
+          <select class="address-state floating-input" style="padding-top: 1.2rem; height: 3.5rem;">
+            <option value="">-- State --</option>
+          </select>
+          <select class="address-city floating-input" style="padding-top: 1.2rem; height: 3.5rem;" disabled>
+            <option value="">-- City --</option>
+          </select>
+        </div>
+        <div class="floating-group" style="margin-top: 1rem;">
+          <textarea class="detailed-address floating-input" placeholder=" " style="min-height: 80px; padding-top: 1.5rem;"></textarea>
+          <label class="floating-label">Specific Areas Covered</label>
+        </div>
+        <input type="hidden" name="service_area" class="full-address-input" required>
+        <div class="address-actions" style="margin-top: 0.5rem; justify-content: flex-start; gap: 0.5rem;">
+          <button type="button" class="btn-get-location address-btn"><i class="fa fa-location-arrow"></i> Location</button>
+        </div>
       </div>
       {% endif %}
 
@@ -189,4 +235,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/assets/js/address-selector.js"></script>
 {% endblock %}

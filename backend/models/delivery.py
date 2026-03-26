@@ -27,6 +27,12 @@ class DeliveryAgent(Base):
     total_earnings = Column(Float, default=0.0)
     current_lat = Column(Float, nullable=True)
     current_lng = Column(Float, nullable=True)
+    
+    # KYC Documents
+    aadhaar_url = Column(String, nullable=True)
+    dl_url = Column(String, nullable=True)
+    profile_photo_url = Column(String, nullable=True)
+    
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", back_populates="delivery_agent")

@@ -4,66 +4,168 @@
 {% block extra_head %}
 <style>
 .provider-banner {
-  height: 250px;
-  background: var(--grad-hero);
+  height: 280px;
+  background: var(--brand-grad);
   position: relative;
+  overflow: visible;
+  margin-bottom: var(--space-20);
+}
+.provider-banner-inner {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-12);
+  background: var(--brand-grad);
 }
 .provider-banner-img {
   position: absolute;
   inset: 0;
-  width: 100%; height: 100%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  opacity: 0.3;
+  opacity: 0.5;
+  filter: saturate(1.2) brightness(0.8);
+  animation: kenBurns 20s infinite alternate linear;
+}
+
+@keyframes kenBurns {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+.provider-banner-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(var(--brand-primary-rgb), 0.2) 0%, rgba(0,0,0,0.4) 100%);
+  pointer-events: none;
 }
 .provider-info-card {
   position: absolute;
-  bottom: -40px;
+  bottom: -60px;
   left: var(--space-8);
   right: var(--space-8);
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  box-shadow: var(--shadow-lg);
+  padding: var(--space-8);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  z-index: 10;
+  transition: transform 0.3s ease;
 }
-.meal-card-horizontal {
+
+.provider-info-card:hover {
+  transform: translateY(-5px);
+}
+/* Main Responsive Layout */
+.pd-main-wrapper {
+  display: flex;
+  gap: var(--space-8);
+  margin-top: 80px;
+  align-items: start;
+}
+
+.pd-menu-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.pd-sidebar-col {
+  width: 320px;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Meal Grid */
+.pd-meal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-5);
+}
+
+.pd-meal-card {
   display: flex;
   background: white;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  margin-bottom: var(--space-5);
   transition: all var(--t-fast);
-}
-.meal-card-horizontal:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--brand-primary-light); }
-.meal-card-horizontal img {
-  width: 160px;
   height: 100%;
-  object-fit: cover;
 }
-.meal-details {
-  padding: var(--space-4) var(--space-5);
+
+.pd-meal-card:hover { 
+  transform: translateY(-3px); 
+  box-shadow: var(--shadow-md); 
+  border-color: var(--brand-primary-light); 
+}
+
+.pd-meal-card img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pd-meal-details {
+  padding: var(--space-4);
   flex: 1;
   display: flex;
   flex-direction: column;
 }
+
 .review-item {
   padding: var(--space-4) 0;
   border-bottom: 1px solid var(--border);
 }
 .review-item:last-child { border-bottom: none; }
 
+.plans-grid-modal {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+.plan-card-premium {
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  position: relative;
+  background: white;
+}
+.plan-card-premium:hover { border-color: var(--orange); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.plan-card-premium.selected { border-color: var(--orange); background: rgba(243,154,31,0.05); box-shadow: 0 0 0 3px rgba(243,154,31,0.15); }
+.plan-card-premium.featured { border-color: var(--brand-primary-light); }
+.plan-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; background: var(--orange); color: white; padding: 2px 8px; border-radius: 10px; position: absolute; top: -10px; right: 12px; }
+.plan-badge.secondary { background: var(--brand-primary); }
+.plan-type { font-size: var(--sm); font-weight: 700; color: var(--text-muted); margin-bottom: var(--space-2); }
+.plan-price { font-size: 1.8rem; font-weight: 800; color: var(--text); margin-bottom: var(--space-4); }
+.plan-price .currency { font-size: 1rem; vertical-align: super; color: var(--orange); }
+.plan-price .period { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+.plan-features { list-style: none; padding: 0; margin: 0; }
+.plan-features li { font-size: var(--xs); color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+.plan-features li .fa { color: var(--green); font-size: 10px; }
+
+@media (max-width: 1200px) {
+  .pd-main-wrapper { flex-direction: column; }
+  .pd-sidebar-col { width: 100%; position: static; }
+}
+
 @media (max-width: 768px) {
+  .pd-meal-grid { grid-template-columns: 1fr; }
+  .pd-meal-card { flex-direction: column; }
+  .pd-meal-card img { width: 100%; height: 200px; }
   .provider-info-card { flex-direction: column; align-items: flex-start; gap: var(--space-4); position: static; margin-top: -40px; }
-  .meal-card-horizontal { flex-direction: column; }
-  .meal-card-horizontal img { width: 100%; height: 200px; }
 }
 </style>
 {% endblock %}
@@ -86,28 +188,41 @@
 <main class="container page-enter" style="padding-top:var(--space-8);padding-bottom:var(--space-12)">
   
   <div class="provider-banner">
-    <img src="{{ provider.image_url or '/assets/images/provider-default.jpg' }}" alt="Banner" class="provider-banner-img" onerror="this.src='/assets/images/provider-default.jpg'">
+    <div class="provider-banner-inner">
+      <img src="{{ provider.image_url or '/assets/images/provider-default.jpg' }}" alt="Banner" class="provider-banner-img" onerror="this.src='/assets/images/provider-default.jpg'">
+    </div>
     
     <div class="provider-info-card">
       <div>
         <h1 style="font-size:var(--h2);margin-bottom:0">{{ provider.mess_name }}</h1>
-        <div style="display:flex;gap:var(--space-4);color:var(--text-muted);margin-top:var(--space-2);font-size:var(--sm)">
+        <div style="display:flex;gap:var(--space-4);color:var(--text-muted);margin-top:var(--space-2);font-size:var(--sm);flex-wrap:wrap">
           <span><i class="fa fa-utensils"></i> {{ provider.cuisine_type }}</span>
           <span><i class="fa fa-map-marker-alt"></i> {{ provider.location }}</span>
-          <span><i class="fa fa-clock"></i> {{ provider.operating_hours }}</span>
+          <span><i class="fa fa-clock"></i> {{ provider.operating_hours | format_hours }}</span>
         </div>
       </div>
       <div style="text-align:right">
-        <div class="stars" style="font-size:1.2rem">{% for i in range((provider.rating|default(0))|int) %}★{% endfor %}{% if (provider.rating|default(0)) % 1 >= 0.5 %}½{% endif %}</div>
+        <div class="stars" style="font-size:1.2rem">
+          {% set rating = provider.rating|float %}
+          {% for i in range(1, 6) %}
+            {% if rating >= i %}
+              <i class="fa fa-star"></i>
+            {% elif rating >= i - 0.5 %}
+              <i class="fa fa-star-half-alt"></i>
+            {% else %}
+              <i class="fa-regular fa-star"></i>
+            {% endif %}
+          {% endfor %}
+        </div>
         <div style="font-size:var(--sm);color:var(--text-muted)">{{ provider.total_reviews|default(0) }} Reviews</div>
       </div>
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--space-8);margin-top:80px">
+  <div class="pd-main-wrapper">
     
     <!-- Menu Section -->
-    <div>
+    <div class="pd-menu-col">
       <h2 style="margin-bottom:var(--space-6)">Today's Menu</h2>
       
       <!-- Filter Pills -->
@@ -120,18 +235,19 @@
       </div>
 
       {% if meals %}
+        <div class="pd-meal-grid">
         {% for m in meals %}
-        <div class="meal-card-horizontal">
+        <div class="pd-meal-card">
           <img src="{{ m.image_url or '/assets/images/meal-default.jpg' }}" onerror="this.src='/assets/images/meal-default.jpg'">
-          <div class="meal-details">
+          <div class="pd-meal-details">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div>
-                <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-1)">
+                <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:8px">
                   <span class="badge {{ 'badge-veg' if m.is_veg else 'badge-nonveg' }}">{{ 'Veg' if m.is_veg else 'Non-Veg' }}</span>
                   <span class="badge badge-gray">{{ m.category.value if m.category else 'Meal' }}</span>
                 </div>
-                <h3 style="font-size:1.1rem;margin-bottom:var(--space-1)">{{ m.name }}</h3>
-                <p style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-3)">{{ m.description }}</p>
+                <h3 style="font-size:1.1rem;margin-bottom:4px">{{ m.name }}</h3>
+                <p style="font-size:var(--sm);color:var(--text-muted);margin-bottom:var(--space-4)">{{ m.description }}</p>
               </div>
               <div style="font-size:1.4rem;font-weight:700;color:var(--brand-primary-dark)">₹{{ m.price|int }}</div>
             </div>
@@ -143,19 +259,20 @@
                 
                 <div class="qty-control">
                   <button type="button" class="qty-btn" onclick="this.nextElementSibling.value = Math.max(1, parseInt(this.nextElementSibling.value) - 1)">-</button>
-                  <input type="number" name="quantity" class="qty-value" value="1" min="1" max="10" style="border:none;background:transparent;outline:none;-moz-appearance:textfield;width:30px">
+                  <input type="number" name="quantity" class="qty-value" value="1" min="1" max="10" style="border:none;background:transparent;outline:none;width:30px;text-align:center">
                   <button type="button" class="qty-btn" onclick="this.previousElementSibling.value = parseInt(this.previousElementSibling.value) + 1">+</button>
                 </div>
                 
                 <button type="submit" class="btn btn-primary btn-sm">
-                  Add to Cart <i class="fa fa-plus"></i>
+                  Add <i class="fa fa-plus"></i>
                 </button>
               </form>
             </div>
           </div>
         </div>
         {% endfor %}
-      {% else %}
+      </div>
+{% else %}
         <div class="empty-state">
           <i class="fa fa-utensils"></i>
           <h3>No meals available currently</h3>
@@ -163,28 +280,74 @@
         </div>
       {% endif %}
     </div>
-    
-    <!-- Provider About & Reviews -->
-    <div>
-      <div class="section-card">
+
+    <!-- Sidebar Section -->
+    <div class="pd-sidebar-col">
+      <!-- Subscribe to a Plan CTA -->
+      {% if not active_subscription and subscription_plans %}
+      <div class="section-card" style="margin-bottom:0; background:linear-gradient(135deg,rgba(243,154,31,0.06) 0%,rgba(255,126,0,0.03) 100%); border:2px dashed rgba(243,154,31,0.3)">
+        <h3 class="section-card-title"><i class="fa fa-calendar-alt" style="color:var(--orange)"></i> Meal Subscription</h3>
+        <p style="font-size:var(--sm); color:var(--text-muted); margin-bottom:var(--space-4)">Get daily home-cooked meals delivered automatically.</p>
+        {% if subscription_plans %}
+        <div style="margin-bottom:var(--space-4)">
+          {% for plan in subscription_plans[:2] %}
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 10px; background:white; border-radius:var(--radius-sm); margin-bottom:6px; border:1px solid var(--border)">
+            <span style="font-size:var(--sm); font-weight:600">{{ plan.name }}</span>
+            <span style="font-size:var(--sm); font-weight:800; color:var(--orange)">₹{{ plan.price|int }}<span style="font-size:10px; color:var(--text-muted); font-weight:400">/{{ 'week' if plan.duration == 'weekly' else 'month' }}</span></span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <button class="btn btn-primary btn-full" onclick="openSubscriptionModalForMeal({% if meals %}{{ meals[0].id }}{% else %}0{% endif %}, 'Subscription', 0)">
+          <i class="fa fa-calendar-check"></i> Subscribe
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- Active Subscription -->
+      {% if active_subscription %}
+      <div class="section-card" style="margin-bottom:0; background:linear-gradient(135deg,rgba(8,201,82,0.03) 0%,rgba(255,126,0,0.03) 100%)">
+        <h3 class="section-card-title"><i class="fa fa-calendar-check text-brand"></i> Active Plan</h3>
+        <div style="border:2px solid var(--green); border-radius:var(--radius-lg); padding:var(--space-4); background:rgba(8,201,82,0.04); position:relative">
+          <div style="font-size:var(--xs); color:var(--text-muted); margin-bottom:var(--space-3)">
+            <div><strong>Plan:</strong> {{ active_subscription.meal.name if active_subscription.meal else (active_subscription.plan.name if active_subscription.plan else active_subscription.plan_type.value|capitalize + " Plan") }}</div>
+            <div><strong>Ends:</strong> {{ active_subscription.end_date.strftime('%d %B') }}</div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2)">
+            <a href="/customer/subscriptions/{{ active_subscription.id }}" class="btn btn-secondary btn-sm" style="text-align:center">Manage</a>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red); border-color:var(--red)" onclick="cancelSubscription({{ active_subscription.id }})">Cancel</button>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="section-card" style="margin-bottom:0">
         <h3 class="section-card-title">About this Mess</h3>
-        <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-4)">
+        <p style="color:var(--text-muted); font-size:var(--sm); margin-bottom:var(--space-4)">
           {{ provider.description or 'Authentic local taste.' }}
         </p>
-        <div style="font-size:var(--sm);color:var(--text-muted)">
+        <div style="font-size:var(--sm); color:var(--text-muted)">
           <div style="margin-bottom:var(--space-2)"><i class="fa fa-phone-alt"></i> Contact Provider</div>
           <div><i class="fa fa-shield-check" style="color:var(--green)"></i> FSSAI Certified</div>
         </div>
       </div>
 
-      <div class="section-card" style="margin-top:var(--space-6)">
+      <div class="section-card" style="margin-bottom:0">
         <h3 class="section-card-title">Recent Reviews</h3>
         {% if reviews %}
           {% for r in reviews %}
           <div class="review-item">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-1)">
               <div style="font-weight:600;font-size:var(--sm)">{{ r.customer.user.name if r.customer and r.customer.user else 'Customer' }}</div>
-              <div class="stars" style="font-size:var(--sm)">{% for i in range(r.rating|int) %}★{% endfor %}</div>
+              <div class="stars" style="font-size:var(--sm)">
+                {% for i in range(1, 6) %}
+                  {% if r.rating|int >= i %}
+                    <i class="fa fa-star"></i>
+                  {% else %}
+                    <i class="fa-regular fa-star"></i>
+                  {% endif %}
+                {% endfor %}
+              </div>
             </div>
             <p style="font-size:var(--sm);color:var(--text-muted);margin:0">"{{ r.comment }}"</p>
           </div>
@@ -196,4 +359,287 @@
     </div>
   </div>
 </main>
+
+<!-- High-Fidelity Subscription Modal -->
+<div class="modal-overlay" id="subscriptionModal">
+  <div class="modal" style="width:min(95vw, 650px); padding:var(--space-8); overflow:hidden">
+    <button class="modal-close" onclick="closeSubscriptionModal()">×</button>
+    
+    <!-- Step 1: Selection -->
+    <div id="step-selection">
+      <div class="modal-header" style="margin-bottom:var(--space-6)">
+        <h2 class="modal-title" style="font-size:1.5rem">Subscribe to <span id="modal-meal-name">Meal</span></h2>
+      </div>
+      
+      <div style="margin-bottom:var(--space-8)">
+        <p style="color:var(--text-muted); margin-bottom:var(--space-2)">Get fresh home-cooked meals delivered daily automatically.</p>
+        <p style="font-weight:600; font-size:var(--sm)">Choose a plan that fits your needs:</p>
+      </div>
+
+      <div class="plans-grid-modal">
+        {% for plan in subscription_plans %}
+        <div class="plan-card-premium {% if plan.duration == 'monthly' %}featured{% endif %}" 
+             id="modal-plan-{{ plan.id }}"
+             onclick="selectModalPlan({{ plan.id }}, '{{ plan.duration }}', '{{ plan.name|escape }}', {{ plan.price }}, {{ plan.duration_days|default(7 if plan.duration == 'weekly' else 30) }}, {{ plan.meals_per_day|default(1) }})">
+          
+          {% if plan.duration == 'monthly' %}
+          <div class="plan-badge">MOST POPULAR</div>
+          {% elif loop.index == 1 %}
+          <div class="plan-badge secondary">BEST VALUE</div>
+          {% endif %}
+
+          <div class="plan-type">{{ plan.name|upper }}</div>
+          <div class="plan-price">
+            <span class="currency">₹</span>{{ plan.price|int }}<span class="period">/{{ 'month' if plan.duration == 'monthly' else 'week' }}</span>
+          </div>
+
+          <ul class="plan-features">
+            <li><i class="fa fa-check"></i> {{ plan.duration_days|default(7 if plan.duration == 'weekly' else 30) }} Days</li>
+            <li><i class="fa fa-check"></i> {{ plan.meals_per_day|default(1) }} Meal/Day</li>
+            {% if plan.description %}
+            <li><i class="fa fa-check"></i> {{ plan.description }}</li>
+            {% else %}
+            <li><i class="fa fa-check"></i> Home Delivery</li>
+            {% endif %}
+          </ul>
+        </div>
+        {% endfor %}
+        {% if not subscription_plans %}
+        <div style="grid-column:1/-1;text-align:center;padding:var(--space-4);color:var(--text-muted)">
+          No subscription plans available for this provider.
+        </div>
+        {% endif %}
+      </div>
+
+      <div style="margin-top:var(--space-8)">
+        <button id="modalProceedBtn" class="btn btn-primary btn-lg btn-full hover-glow" 
+                style="padding:1rem; font-size:1.2rem; border-radius:var(--radius); display:none"
+                onclick="goToCheckout()">
+          Proceed to Checkout <i class="fa fa-arrow-right" style="margin-left:8px"></i>
+        </button>
+        <p style="font-size:11px; color:var(--text-muted); text-align:center; margin-top:var(--space-4); line-height:1.4">
+          Note: Daily orders will be generated automatically based on availability.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 2: Checkout & Payment -->
+    <div id="step-checkout" style="display:none">
+      <div class="modal-header" style="margin-bottom:var(--space-6)">
+        <button class="back-link" onclick="goToSelection()" style="background:none; border:none; color:var(--orange); font-weight:600; cursor:pointer">
+          <i class="fa fa-arrow-left"></i> Back to Plans
+        </button>
+        <h2 class="modal-title" style="font-size:1.5rem; margin-top:var(--space-2)">Checkout</h2>
+      </div>
+
+      <div class="checkout-summary" style="background:var(--bg-light); border-radius:var(--radius-md); padding:var(--space-4); margin-bottom:var(--space-6)">
+        <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-2)">
+          <span style="color:var(--text-muted)">Selected Plan</span>
+          <span id="summary-plan-name" style="font-weight:700">Premium Monthly</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:var(--space-2)">
+          <span style="color:var(--text-muted)">Duration</span>
+          <span id="summary-plan-duration" style="font-weight:600">30 Days</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-top:1px dashed var(--border); padding-top:var(--space-2); margin-top:var(--space-2)">
+          <span style="font-weight:700">Total Amount</span>
+          <span id="summary-plan-price" style="font-weight:800; color:var(--orange); font-size:1.2rem">₹1800</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:var(--space-8)">
+        <h4 style="margin-bottom:var(--space-3)">Select Payment Method</h4>
+        <div class="payment-options">
+          <label class="payment-option selected">
+            <input type="radio" name="payment" value="upi" checked>
+            <i class="fa fa-mobile-android"></i>
+            <span>UPI / PhonePe / GPay</span>
+            <i class="fa fa-check-circle check"></i>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment" value="card">
+            <i class="fa fa-credit-card"></i>
+            <span>Debit / Credit Card</span>
+            <i class="fa fa-check-circle check"></i>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment" value="cod">
+            <i class="fa fa-money-bill-wave"></i>
+            <span>Cash on Delivery (COD)</span>
+            <i class="fa fa-check-circle check"></i>
+          </label>
+        </div>
+      </div>
+
+      <button id="modalPayBtn" class="btn btn-primary btn-lg btn-full hover-glow" 
+              style="padding:1rem; font-size:1.2rem; border-radius:var(--radius)"
+              onclick="processPayment({{ provider.id }})">
+        Pay & Subscribe <i class="fa fa-shield-check" style="margin-left:8px"></i>
+      </button>
+    </div>
+
+    <!-- Step 3: Success -->
+    <div id="step-success" style="display:none; text-align:center; padding:var(--space-8) 0">
+      <div class="success-icon" style="font-size:4rem; color:var(--green); margin-bottom:var(--space-4)">
+        <i class="fa fa-check-circle animate-pop"></i>
+      </div>
+      <h2 style="margin-bottom:var(--space-2)">Subscription Successful!</h2>
+      <p style="color:var(--text-muted); margin-bottom:var(--space-8)">Your daily meals are now scheduled. You can track them in your calendar.</p>
+      
+      <div style="display:flex; gap:var(--space-3)">
+        <a href="/customer/subscriptions" class="btn btn-primary btn-lg btn-full">Go to Calendar</a>
+        <button onclick="window.location.reload()" class="btn btn-outline btn-lg btn-full">Close</button>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<style>
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.payment-option input { display: none; }
+.payment-option i:not(.check) { font-size: 1.2rem; color: var(--orange); width: 24px; text-align: center; }
+.payment-option .check { margin-left: auto; color: var(--orange); opacity: 0; transform: scale(0.5); transition: all 0.2s ease; }
+
+.payment-option:hover { background: var(--bg-light); border-color: var(--orange-light); }
+.payment-option.selected { border-color: var(--orange); background: rgba(243,154,31,0.05); }
+.payment-option.selected .check { opacity: 1; transform: scale(1); }
+
+@keyframes pop {
+  0% { transform: scale(0.8); opacity:0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity:1; }
+}
+.animate-pop { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+</style>
+
+<!-- Subscription Version: 2.1 (Dynamic Plans + Legacy Support) -->
+<script>
+console.log("DigiBhoj Subscription System v2.1 Loaded");
+let selectedMeal = { id: null, name: null, price: 0 };
+let selectedPlan = { id: null, type: null, name: null, days: 0, meals: 0, price: 0 };
+
+function openSubscriptionModalForMeal(mealId, mealName, mealPrice) {
+  selectedMeal = { id: mealId, name: mealName, price: mealPrice };
+  document.getElementById('modal-meal-name').innerText = mealName;
+  
+  document.querySelectorAll('.plan-card-premium').forEach(c => c.classList.remove('selected'));
+  document.getElementById('modalProceedBtn').style.display = 'none';
+  selectedPlan = { id: null, type: null, name: null, days: 0, meals: 0, price: 0 };
+  
+  document.getElementById('subscriptionModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  goToSelection();
+}
+
+function closeSubscriptionModal() {
+  document.getElementById('subscriptionModal').classList.remove('open');
+  document.body.style.overflow = 'auto';
+}
+
+function selectModalPlan(id, type, name, price, days, meals) {
+  document.querySelectorAll('.plan-card-premium').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('modal-plan-' + id);
+  if (card) card.classList.add('selected');
+  
+  selectedPlan = { id, type, name, days, meals, price };
+  
+  const btn = document.getElementById('modalProceedBtn');
+  if (btn) btn.style.display = 'block';
+}
+
+function goToCheckout() {
+  if (!selectedPlan.id) return;
+  
+  // Fill summary
+  document.getElementById('summary-plan-name').textContent = selectedMeal.name + ' - ' + selectedPlan.name;
+  document.getElementById('summary-plan-duration').textContent = `${selectedPlan.days} Days (${selectedPlan.meals} Meal/Day)`;
+  document.getElementById('summary-plan-price').textContent = `₹${selectedPlan.price}`;
+  
+  // Transitions
+  document.getElementById('step-selection').style.display = 'none';
+  document.getElementById('step-checkout').style.display = 'block';
+}
+
+function goToSelection() {
+  document.getElementById('step-selection').style.display = 'block';
+  document.getElementById('step-checkout').style.display = 'none';
+  document.getElementById('step-success').style.display = 'none';
+}
+
+async function processPayment(providerId) {
+  const btn = document.getElementById('modalPayBtn');
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing Payment...';
+
+  // Simulate Payment Delay
+  await new Promise(r => setTimeout(r, 1500));
+
+  try {
+    const res = await fetch('/api/subscriptions/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        provider_id: providerId, 
+        meal_id: selectedMeal.id, 
+        plan_id: selectedPlan.id,
+        plan_type: selectedPlan.type,
+        payment_method: document.querySelector('input[name="payment"]:checked').value
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('step-checkout').style.display = 'none';
+      document.getElementById('step-success').style.display = 'block';
+    } else {
+      alert(data.detail || 'Subscription failed');
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  } catch (e) {
+    alert('An error occurred');
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+// Payment Option Selection
+document.addEventListener('click', (e) => {
+  const label = e.target.closest('.payment-option');
+  if (label) {
+    document.querySelectorAll('.payment-option').forEach(l => l.classList.remove('selected'));
+    label.classList.add('selected');
+    label.querySelector('input').checked = true;
+  }
+});
+
+async function cancelSubscription(subId) {
+  if (!confirm('Are you sure you want to cancel your subscription?')) return;
+  try {
+    const res = await fetch(`/api/subscriptions/${subId}/cancel`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) { alert('Subscription cancelled.'); window.location.reload(); }
+    else alert(data.detail || 'Failed to cancel');
+  } catch(e) { alert('Error cancelling subscription'); }
+}
+</script>
 {% endblock %}

@@ -100,10 +100,29 @@
               <input type="tel" id="phone" name="phone" class="form-control" value="{{ customer.phone }}" required>
             </div>
             
-            <div class="form-group">
-              <label class="form-label" for="address">Default Delivery Address</label>
-              <textarea id="address" name="address" class="form-control" rows="4">{{ customer.address }}</textarea>
-              <p style="font-size:var(--xs);color:var(--text-muted);margin-top:var(--space-1)"><i class="fa fa-info-circle"></i> This address will be auto-filled during checkout.</p>
+            <div class="form-group address-selector-container">
+              <label class="form-label">Delivery Address</label>
+              <div class="address-grid">
+                <select class="address-state form-control">
+                  <option value="">-- Select State --</option>
+                </select>
+                <select class="address-city form-control" disabled>
+                  <option value="">-- Select City --</option>
+                </select>
+              </div>
+              <textarea class="detailed-address form-control" rows="2" style="margin-top:var(--space-2)" placeholder="Street, House No, Landmark"></textarea>
+              
+              <!-- Hidden field for backend compatibility -->
+              <input type="hidden" name="address" class="full-address-input" value="{{ customer.address }}">
+
+              <div class="address-actions">
+                <button type="button" class="btn-get-location address-btn" style="border-style:solid;background:white">
+                  <i class="fa fa-location-arrow"></i> Use Current Location
+                </button>
+                <button type="button" class="btn-pick-map address-btn" style="border-style:solid;background:white">
+                  <i class="fa fa-map-marked-alt"></i> Pick from Map
+                </button>
+              </div>
             </div>
             
             <button type="submit" class="btn btn-primary btn-lg" style="margin-top:var(--space-4)">
@@ -137,21 +156,46 @@
           </div>
         </div>
 
-        <div id="notifications" class="profile-tab-content" style="padding:var(--space-8);display:none">
-          <h3 style="margin-bottom:var(--space-6)">Notification Preferences</h3>
-          <div style="display:flex;flex-direction:column;gap:var(--space-4)">
-            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-              <span>Email Notifications</span>
-              <input type="checkbox" checked>
-            </label>
-            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-              <span>Order Status Updates</span>
-              <input type="checkbox" checked>
-            </label>
-            <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-              <span>Promotional Offers</span>
-              <input type="checkbox">
-            </label>
+        <div id="notifications" class="profile-tab-content" style="padding:var(--space-6);display:none">
+          <h3 style="margin-bottom:var(--space-6);font-size:var(--h4)">Notification Preferences</h3>
+          <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+            
+            <div class="notification-settings-card">
+              <div class="notif-icon-box"><i class="fa fa-envelope"></i></div>
+              <div class="notif-content">
+                <span class="notif-title">Email Notifications</span>
+                <span class="notif-desc">Receive order summaries and receipts via email.</span>
+              </div>
+              <div class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </div>
+            </div>
+
+            <div class="notification-settings-card">
+              <div class="notif-icon-box"><i class="fa fa-bell"></i></div>
+              <div class="notif-content">
+                <span class="notif-title">Order Status Updates</span>
+                <span class="notif-desc">Real-time alerts for preparation and delivery status.</span>
+              </div>
+              <div class="switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </div>
+            </div>
+
+            <div class="notification-settings-card">
+              <div class="notif-icon-box"><i class="fa fa-tag"></i></div>
+              <div class="notif-content">
+                <span class="notif-title">Promotional Offers</span>
+                <span class="notif-desc">Exclusive deals, seasonal menus, and partner discounts.</span>
+              </div>
+              <div class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -188,5 +232,6 @@ function switchProfileTab(evt, tabId) {
   evt.currentTarget.style.borderColor = "var(--brand-primary)";
 }
 </script>
+<script src="/assets/js/address-selector.js"></script>
 {% endblock %}
 {% endblock %}

@@ -1,6 +1,178 @@
 {% extends "base.html" %}
 {% block title %}My Orders{% endblock %}
 
+{% block extra_head %}
+<style>
+/* Orders Specific Styles */
+.pd-orders-toolbar {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  margin-bottom: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.pd-toolbar-top {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.pd-search-group {
+  flex: 1;
+  position: relative;
+}
+
+.pd-search-group i {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.pd-search-input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-10);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--sm);
+  transition: all 0.2s ease;
+}
+
+.pd-search-input:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(var(--brand-primary-rgb), 0.1);
+  outline: none;
+}
+
+.pd-filter-pills {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.pd-filter-pill {
+  padding: var(--space-2) var(--space-4);
+  border-radius: 50px;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pd-filter-pill:hover { background: var(--border); }
+.pd-filter-pill.active {
+  background: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: white;
+}
+
+.pd-custom-date-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--brand-primary);
+  font-size: var(--xs);
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.pd-custom-date-range {
+  display: none;
+  gap: var(--space-4);
+  align-items: center;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.3s ease forwards;
+}
+
+.pd-custom-date-range.active { display: flex; }
+
+.pd-date-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pd-date-input-group input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--xs);
+}
+
+/* Response Grid */
+.pd-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: var(--space-6);
+}
+
+.pd-order-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.pd-order-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--brand-primary-light);
+}
+
+.pd-order-header {
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pd-order-body {
+  padding: var(--space-5);
+  flex: 1;
+}
+
+.pd-order-footer {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+}
+
+@media (max-width: 992px) {
+  .pd-orders-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .pd-toolbar-top { flex-direction: column; align-items: stretch; }
+  .pd-custom-date-toggle { margin-left: 0; }
+  .pd-custom-date-range { flex-direction: column; align-items: stretch; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
 {% block body %}
 <nav class="navbar">
   <div style="display:flex;align-items:center;gap:var(--space-4)">
@@ -15,78 +187,117 @@
   </div>
 </nav>
 
-<main class="container page-enter" style="padding:var(--space-10) 0;max-width:900px">
-  <div class="page-header">
-    <h1 style="margin-bottom:0">Order History</h1>
-    <p>Track your current orders and view past meals</p>
+<main class="container page-enter" style="padding:var(--space-10) 0; max-width:1200px">
+  <div class="page-header" style="margin-bottom:var(--space-8)">
+    <h1 style="margin-bottom:var(--space-1)">Order History</h1>
+    <p style="color:var(--text-muted)">Manage your past orders and meal review history</p>
+  </div>
+
+  <div class="pd-orders-toolbar">
+    <div class="pd-toolbar-top">
+      <div class="pd-search-group">
+        <i class="fa fa-search"></i>
+        <input type="text" id="orderSearch" class="pd-search-input" placeholder="Search by mess name or order ID..." onkeyup="filterOrders()">
+      </div>
+      <div class="pd-filter-pills" id="timeFilters">
+        <div class="pd-filter-pill active" data-range="all" onclick="setTimeFilter('all', this)">All Time</div>
+        <div class="pd-filter-pill" data-range="today" onclick="setTimeFilter('today', this)">Today</div>
+        <div class="pd-filter-pill" data-range="week" onclick="setTimeFilter('week', this)">This Week</div>
+        <div class="pd-filter-pill" data-range="month" onclick="setTimeFilter('month', this)">This Month</div>
+      </div>
+      <div class="pd-custom-date-toggle" onclick="toggleCustomDate()">
+        <i class="fa fa-calendar-alt"></i> Custom Range
+      </div>
+    </div>
+    
+    <div class="pd-custom-date-range" id="customDateRange">
+      <div class="pd-date-input-group">
+        <label style="font-size:var(--xs); font-weight:600">From:</label>
+        <input type="date" id="dateFrom" onchange="filterOrders()">
+      </div>
+      <div class="pd-date-input-group">
+        <label style="font-size:var(--xs); font-weight:600">To:</label>
+        <input type="date" id="dateTo" onchange="filterOrders()">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="setTimeFilter('all', document.querySelector('[data-range=\'all\']')); toggleCustomDate()">Reset</button>
+    </div>
   </div>
 
   {% if orders %}
-    <div style="display:flex;flex-direction:column;gap:var(--space-6)">
+    <div class="pd-orders-grid" id="ordersGrid">
       {% for order in orders %}
-      <div class="section-card hover-lift" style="display:flex;flex-direction:column;gap:var(--space-4);padding:0">
+      <div class="pd-order-card order-item" 
+           data-mess="{{ order.provider.mess_name|lower }}" 
+           data-id="{{ order.id }}" 
+           data-date="{{ order.created_at.isoformat() if order.created_at else '' }}">
         
-        <div style="padding:var(--space-5);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0">
+        <div class="pd-order-header">
           <div>
-            <div style="font-weight:700;margin-bottom:var(--space-1)">Order #{{ order.id }}</div>
-            <div style="font-size:var(--sm);color:var(--text-muted)">{{ order.created_at.strftime('%d %b %Y, %I:%M %p') if order.created_at else 'N/A' }}</div>
+            <div style="font-weight:700">Order #{{ order.id }}</div>
+            <div style="font-size:11px; color:var(--text-muted)">{{ order.created_at.strftime('%d %b %Y, %I:%M %p') if order.created_at else 'N/A' }}</div>
           </div>
-          <div class="status-badge status-{{ order.order_status.value }}">{{ order.order_status.value|replace('_', ' ')|title }}</div>
+          <div class="status-badge status-{{ order.order_status.value }}" style="font-size:10px">
+            {{ order.order_status.value|replace('_', ' ')|title }}
+          </div>
         </div>
         
-        <div style="padding:var(--space-5);display:flex;gap:var(--space-6)">
-          <div style="flex:1">
-            <h3 style="font-size:1.1rem;margin-bottom:var(--space-4)">
-              <i class="fa fa-store"></i> {{ order.provider.mess_name }}
-            </h3>
-            
-            <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4)">
-              {% for item in order.order_items %}
-              <div style="font-size:var(--sm);display:flex;justify-content:space-between">
-                <span>{{ item.quantity }}x {{ item.meal.name }}</span>
-                <span>₹{{ (item.unit_price * item.quantity)|int }}</span>
-              </div>
-              {% endfor %}
+        <div class="pd-order-body">
+          <h3 style="font-size:1rem; margin-bottom:var(--space-3); display:flex; align-items:center; gap:8px">
+            <i class="fa fa-utensils-alt" style="color:var(--brand-primary)"></i>
+            {{ order.provider.mess_name }}
+          </h3>
+          
+          <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:var(--space-4)">
+            {% for item in order.items %}
+            <div style="font-size:var(--xs); display:flex; justify-content:space-between; color:var(--text-muted)">
+              <span>{{ item.quantity }}x {{ item.meal.name }}</span>
+              <span style="color:var(--text)">₹{{ (item.unit_price * item.quantity)|int }}</span>
             </div>
-            
-            <div style="font-size:var(--sm);color:var(--text-muted);display:flex;flex-direction:column;gap:var(--space-1)">
-              <div><i class="fa fa-map-marker-alt"></i> {{ order.delivery_address }}</div>
-              <div><i class="fa fa-money-bill-wave"></i> {{ order.payment_method }} ({{ order.payment_status.value|title }})</div>
-            </div>
+            {% endfor %}
           </div>
           
-          <div style="display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:var(--space-4);border-left:1px solid var(--border);padding-left:var(--space-6);min-width:140px">
-            <div style="text-align:right">
-              <div style="font-size:var(--sm);color:var(--text-muted)">Total Paid</div>
-              <div style="font-size:1.5rem;font-weight:800;color:var(--brand-primary-dark)">₹{{ order.total_price|int }}</div>
-            </div>
-            <a href="/customer/order/{{ order.id }}" class="btn btn-outline btn-sm" style="white-space:nowrap">View Details</a>
-            
+          <div style="font-size:11px; color:var(--text-muted); background:var(--bg-light); padding:8px; border-radius:var(--radius-sm)">
+            <div style="margin-bottom:4px"><i class="fa fa-map-marker-alt"></i> {{ order.delivery_address }}</div>
+            <div><i class="fa fa-credit-card"></i> {{ order.payment_method }} ({{ order.payment_status.value|title }})</div>
+          </div>
+        </div>
+        
+        <div class="pd-order-footer">
+          <div>
+            <div style="font-size:10px; color:var(--text-muted)">Total Paid</div>
+            <div style="font-size:1.2rem; font-weight:800; color:var(--brand-primary-dark)">₹{{ order.total_price|int }}</div>
+          </div>
+          <div style="display:flex; gap:8px">
             {% if order.order_status.value == 'delivered' %}
               {% set ns = namespace(has_review=false) %}
-              {% if order.reviews %}
-                {% for r in order.reviews %}
-                  {% if r.customer_id == user.customer.id %}{% set ns.has_review = true %}{% endif %}
-                {% endfor %}
+              {% if order.review and order.review.customer_id == user.customer.id %}
+                {% set ns.has_review = true %}
               {% endif %}
               
               {% if not ns.has_review %}
-              <button class="btn btn-primary btn-sm" onclick="openReviewModal('{{ order.id }}', '{{ order.provider.mess_name }}')">Rate Order</button>
+                <button class="btn btn-primary btn-sm" onclick="openReviewModal('{{ order.id }}', '{{ order.provider.mess_name }}')">Rate</button>
               {% else %}
-              <div style="font-size:var(--xs);color:var(--brand-primary)"><i class="fa fa-check-circle"></i> Rated</div>
+                <span style="font-size:var(--xs); color:var(--brand-primary); align-self:center"><i class="fa fa-check-circle"></i> Rated</span>
               {% endif %}
             {% endif %}
+            <a href="/customer/order/{{ order.id }}" class="btn btn-secondary btn-sm">Details</a>
           </div>
         </div>
-        
       </div>
       {% endfor %}
     </div>
+    
+    <div id="noResults" style="display:none; text-align:center; padding:var(--space-20) 0">
+      <i class="fa fa-search" style="font-size:3rem; color:var(--border); margin-bottom:var(--space-4)"></i>
+      <h3>No matching orders found</h3>
+      <p style="color:var(--text-muted)">Try adjusting your search or filters</p>
+    </div>
+
   {% else %}
     <div class="empty-state">
-      <i class="fa fa-receipt" style="font-size:4rem;color:var(--border);margin-bottom:var(--space-4)"></i>
+      <i class="fa fa-receipt" style="font-size:4rem; color:var(--border); margin-bottom:var(--space-4)"></i>
       <h3 style="margin-bottom:var(--space-2)">No orders yet</h3>
-      <p style="color:var(--text-muted);margin-bottom:var(--space-6)">You haven't placed any orders. Start exploring local mess menus!</p>
+      <p style="color:var(--text-muted); margin-bottom:var(--space-6)">You haven't placed any orders. Start exploring local mess menus!</p>
       <a href="/customer/home" class="btn btn-primary btn-xl">Order Food Now</a>
     </div>
   {% endif %}
@@ -127,6 +338,88 @@
 
 {% block extra_js %}
 <script>
+// Filter Configuration
+let currentRange = 'all';
+
+function toggleCustomDate() {
+  const custom = document.getElementById('customDateRange');
+  custom.classList.toggle('active');
+}
+
+function setTimeFilter(range, el) {
+  currentRange = range;
+  document.querySelectorAll('.pd-filter-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  
+  // Clear custom dates if picking a preset
+  if (range !== 'custom') {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+  }
+  
+  filterOrders();
+}
+
+function filterOrders() {
+  const searchVal = document.getElementById('orderSearch').value.toLowerCase();
+  const dateFrom = document.getElementById('dateFrom').value ? new Date(document.getElementById('dateFrom').value) : null;
+  const dateTo = document.getElementById('dateTo').value ? new Date(document.getElementById('dateTo').value) : null;
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const oneWeekAgo = new Date(today); oneWeekAgo.setDate(today.getDate() - 7);
+  const oneMonthAgo = new Date(today); oneMonthAgo.setMonth(today.getMonth() - 1);
+
+  const orders = document.querySelectorAll('.order-item');
+  let visibleCount = 0;
+
+  orders.forEach(order => {
+    const mess = order.getAttribute('data-mess');
+    const id = order.getAttribute('data-id');
+    const dateStr = order.getAttribute('data-date');
+    const orderDate = dateStr ? new Date(dateStr) : null;
+    
+    let matchesSearch = !searchVal || mess.includes(searchVal) || id.includes(searchVal);
+    let matchesTime = true;
+
+    // Time Range Logic
+    if (currentRange === 'today') {
+      matchesTime = orderDate >= today;
+    } else if (currentRange === 'week') {
+      matchesTime = orderDate >= oneWeekAgo;
+    } else if (currentRange === 'month') {
+      matchesTime = orderDate >= oneMonthAgo;
+    }
+
+    // Custom Date Logic
+    if (dateFrom && orderDate < dateFrom) matchesTime = false;
+    if (dateTo) {
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      if (orderDate > endOfDay) matchesTime = false;
+    }
+
+    if (matchesSearch && matchesTime) {
+      order.style.display = 'flex';
+      visibleCount++;
+    } else {
+      order.style.display = 'none';
+    }
+  });
+
+  // Handle Empty Result
+  const noResults = document.getElementById('noResults');
+  const grid = document.getElementById('ordersGrid');
+  if (visibleCount === 0) {
+    if (grid) grid.style.display = 'none';
+    if (noResults) noResults.style.display = 'block';
+  } else {
+    if (grid) grid.style.display = 'grid';
+    if (noResults) noResults.style.display = 'none';
+  }
+}
+
+// Existing Review logic
 function openReviewModal(orderId, messName) {
   document.getElementById('modalOrderId').value = orderId;
   document.getElementById('modalMessName').innerText = messName;
@@ -140,7 +433,6 @@ function closeReviewModal() {
   document.getElementById('reviewModal').style.display = 'none';
 }
 
-// Star Rating Logic
 const stars = document.querySelectorAll('.star-btn');
 const ratingInput = document.getElementById('reviewRating');
 
@@ -171,8 +463,6 @@ function updateStars(val) {
     }
   });
 }
-
-// Initialize stars to 5 by default if that's the input value
 updateStars(5);
 </script>
 {% endblock %}

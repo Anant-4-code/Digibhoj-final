@@ -333,7 +333,18 @@ footer {
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-4)">
             <div>
-              <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}{% if p.rating % 1 >= 0.5 %}½{% endif %}</span>
+              <span class="stars">
+                {% set rating = p.rating|default(0)|float %}
+                {% for i in range(1, 6) %}
+                  {% if rating >= i %}
+                    <i class="fa fa-star"></i>
+                  {% elif rating >= i - 0.5 %}
+                    <i class="fa fa-star-half-alt"></i>
+                  {% else %}
+                    <i class="fa-regular fa-star"></i>
+                  {% endif %}
+                {% endfor %}
+              </span>
               <span style="font-size:var(--xs);color:var(--text-muted)">({{ p.total_reviews }})</span>
             </div>
             <span class="btn btn-secondary btn-sm">View Menu</span>

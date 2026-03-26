@@ -41,30 +41,25 @@ Dijibhojf/
 │   └── index.py                # Main entry for serverless functions
 ├── backend/                    # Core Application Logic
 │   ├── main.py                 # FastAPI initialization & config
-│   ├── models/                 # SQLAlchemy Data Models
-│   │   ├── agent.py            # Rider/Delivery models
-│   │   ├── customer.py         # Customer models
-│   │   ├── provider.py         # Food provider models
-│   │   └── order.py            # Order and transaction models
+│   ├── models/                 # SQLAlchemy Data Models (agent.py, customer.py, provider.py, order.py)
 │   ├── routers/                # API and UI Route Handlers
 │   │   ├── ui_router.py        # Main HTML page routes
-│   │   ├── auth_router.py      # Login/Register endpoints
-│   │   └── api_delivery.py     # Delivery-specific API endpoints
+│   │   ├── api_customer.py     # Customer-specific API endpoints (polling, notifications)
+│   │   ├── api_delivery.py     # Delivery-specific API endpoints (OTP, tracking)
+│   │   └── api_provider.py     # Provider-specific API endpoints (meal management)
 │   └── templates/              # Jinja2 HTML Templates
 │       ├── base.html           # Main shared layout
-│       ├── home.html           # Landing page
-│       ├── delivery/           # Rider-specific pages
-│       │   ├── dashboard.html  # Rider stats and tasks
-│       │   └── profile.html    # Enhanced Rider Profile (Tabs)
-│       └── provider/           # Provider-specific pages
+│       ├── customer/           # Customer pages (home, checkout)
+│       ├── delivery/           # Rider pages (dashboard, profile)
+│       └── provider/           # Provider pages (dashboard, menu)
 ├── public/                     # Static Assets
 │   ├── assets/
-│   │   ├── css/                # Stylesheets (design-system, components)
-│   │   ├── js/                 # Client-side scripts (address-selector)
-│   │   └── img/                # Global images and icons
-│   └── uploads/                # Dynamic user uploads (KYC, Photos)
+│   │   ├── css/                # Design-system and component styles
+│   │   └── js/                 # Client scripts (order-polling.js, address-selector.js)
+│   └── uploads/                # Dynamic user uploads
 ├── requirements.txt            # Python Dependencies
 ├── vercel.json                 # Vercel Configuration
+├── digibhoj.db                 # Main SQLite Database
 └── README.md                   # Project Overview
 ```
 

@@ -8,8 +8,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1.4rem;
+  gap: 0.3rem;
+  padding: 0.5rem 1.2rem;
   border: none;
   border-radius: var(--radius-full);
   font-family: var(--font-head);
@@ -269,6 +269,80 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   border-color: var(--brand-primary);
 }
 
+/* Cuisine Grid Chips */
+.cuisine-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.chip-item {
+  position: relative;
+}
+.chip-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.chip-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  background: #f0f0f0;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip-label:hover {
+  transform: translateY(-1px);
+  background: #e8e8e8;
+}
+.chip-input:checked + .chip-label {
+  background: var(--grad-action);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Compact Sidebar Styles */
+.sidebar-compact-section {
+  padding: 0 var(--space-4) var(--space-4);
+}
+.sidebar-compact-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.compact-apply-btn {
+  background: var(--grad-action);
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  box-shadow: 0 4px 10px rgba(243,154,31,0.3);
+  width: 80%;
+  margin: 0 auto;
+  display: block;
+}
+.compact-apply-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(243,154,31,0.4);
+}
+
 /* ── Quantity Control ── */
 .qty-control {
   display: flex;
@@ -291,6 +365,11 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   transition: all var(--t-fast);
 }
 .qty-btn:hover { background: var(--brand-primary); color: white; }
+.form-control:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(168,184,91,0.15);
+  outline: none;
+}
 .qty-value { font-weight: 700; min-width: 24px; text-align: center; }
 
 /* ── Skeleton loader ── */
@@ -320,6 +399,154 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   background: var(--grad-action);
   border-radius: var(--radius-full);
   transition: width 1s ease;
+}
+
+/* Compact Horizontal Order Status */
+.status-tracking-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: var(--space-8) 0 var(--space-4);
+  margin-bottom: var(--space-6);
+}
+.status-tracking-row::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--space-8) + 5px);
+  left: 0; right: 0;
+  height: 2px;
+  background: var(--border);
+  z-index: 1;
+}
+.tracking-step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.tracking-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--card-bg);
+  transition: all var(--t-normal);
+  margin-bottom: 8px;
+}
+.tracking-step.completed .tracking-dot {
+  background: var(--green);
+}
+.tracking-step.current .tracking-dot {
+  background: var(--orange);
+  box-shadow: 0 0 12px var(--orange);
+  transform: scale(1.2);
+}
+.tracking-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.tracking-step.completed .tracking-label { color: var(--green-dark); }
+.tracking-step.current .tracking-label { color: var(--orange); }
+
+/* Status Badge with Price */
+.status-price-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--grad-action);
+  color: white;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Toggle Switch ── */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--border);
+  transition: .4s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px; width: 18px;
+  left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+input:checked + .slider { background-color: var(--brand-primary); }
+input:focus + .slider { box-shadow: 0 0 1px var(--brand-primary); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Compact Notification Cards */
+.notification-settings-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--t-fast);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+.notification-settings-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-primary-light);
+}
+
+.notif-icon-box {
+  width: 42px;
+  height: 42px;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: var(--orange);
+  flex-shrink: 0;
+}
+
+.notif-content {
+  flex: 1;
+}
+.notif-title {
+  font-weight: 700;
+  font-size: var(--sm);
+  color: var(--text);
+  margin-bottom: 2px;
+  display: block;
+}
+.notif-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: block;
 }
 
 /* ── Dropdown ── */
@@ -427,7 +654,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 }
 .tag-item:hover {
   background: var(--bg);
-  border-color: var(--green-light);
+  border-color: var(--brand-primary-light);
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
 }
@@ -445,3 +672,91 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 
 .task-header-status-pending { background: rgba(21,101,192,0.05) !important; }
 .task-header-status-picked_up, .task-header-status-delivered { background: rgba(34,197,94,0.05) !important; }
+
+/* ── Global Micro-interactions ── */
+.hover-lift {
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--shadow-glow);
+  filter: brightness(1.1);
+}
+/* ── Enhanced Address Selector ── */
+.address-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.address-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.address-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.address-btn:hover {
+  background: white;
+  border-color: var(--brand-primary);
+  color: var(--brand-primary-dark);
+}
+.address-btn i { font-size: 14px; }
+
+/* ── Premium UI Utilities ── */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.premium-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: all var(--t-normal);
+  box-shadow: var(--shadow-sm);
+}
+.premium-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--brand-primary-light);
+}
+
+.rating-select-wrapper {
+  position: relative;
+  transition: all var(--t-fast);
+}
+.rating-select-wrapper:hover {
+  transform: translateY(-1px);
+}
+.rating-select-wrapper select {
+  cursor: pointer;
+  background-color: var(--bg);
+  border: 1.5px solid var(--border);
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.rating-select-wrapper select:hover {
+  border-color: var(--brand-primary-light);
+  background-color: white;
+}

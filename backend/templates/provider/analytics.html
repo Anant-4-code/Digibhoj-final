@@ -47,112 +47,366 @@
   </aside>
 
   <main class="main-content page-enter">
-    <div class="page-header">
-      <h1>Analytics & Earnings</h1>
-      <p>Overview of your business performance</p>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card green">
-        <div class="stat-icon"><i class="fa fa-wallet"></i></div>
-        <div class="stat-value count-up" data-prefix="₹">{{ total_revenue|int }}</div>
-        <div class="stat-label">Total Earnings</div>
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:var(--space-4)">
+      <div>
+        <h1>Analytics & Reports</h1>
+        <p>Track your business performance and insights</p>
       </div>
-      <div class="stat-card orange">
-        <div class="stat-icon"><i class="fa fa-receipt"></i></div>
-        <div class="stat-value count-up">{{ total_orders }}</div>
-        <div class="stat-label">Total Orders Completed</div>
-      </div>
-      <div class="stat-card yellow">
-        <div class="stat-icon"><i class="fa fa-star"></i></div>
-        <div class="stat-value">{{ provider.rating|default(0.0) }}</div>
-        <div class="stat-label">Average Rating</div>
+      <div style="display:flex; gap:var(--space-3); align-items:center">
+        <select id="timeRangeFilter" class="form-input" style="width:140px; padding:8px 12px; font-weight:600; cursor:pointer" onchange="loadAnalytics()">
+          <option value="today">Today</option>
+          <option value="week" selected>This Week</option>
+          <option value="month">This Month</option>
+          <option value="all">All Time</option>
+        </select>
+        <button class="btn btn-secondary" onclick="exportReport()"><i class="fa fa-download"></i> Export Report</button>
       </div>
     </div>
 
-    <!-- Charts -->
-    <div class="section-card" style="margin-top:var(--space-8)">
-      <h3 class="section-card-title">Earnings History (Past 7 Days)</h3>
-      <div style="height:350px;width:100%;padding-top:var(--space-4)">
-        <canvas id="earningsChart"></canvas>
+    <!-- Smart Insights Bar -->
+    <div id="smartInsightsContainer" style="display:none; margin-bottom:var(--space-6)">
+      <!-- Filled by JS -->
+    </div>
+
+    <!-- KPI Grid -->
+    <h3 class="section-card-title" style="margin-bottom:var(--space-4)">Revenue Overview</h3>
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom:var(--space-8)">
+      <div class="stat-card green" style="border-left:4px solid var(--green)">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="stat-value count-up" id="kpi-earnings" data-prefix="₹">0</div>
+            <div class="stat-label">Total Revenue</div>
+          </div>
+          <div class="trend-badge" id="trend-earnings" style="background:rgba(8,201,82,0.1); color:var(--green); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:700">0%</div>
+        </div>
       </div>
+      
+      <div class="stat-card orange" style="border-left:4px solid var(--orange)">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="stat-value count-up" id="kpi-orders">0</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="trend-badge" id="trend-orders" style="background:rgba(243,154,31,0.1); color:var(--orange); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:700">0%</div>
+        </div>
+      </div>
+      
+      <div class="stat-card" style="border-left:4px solid var(--brand-primary)">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="stat-value count-up" id="kpi-subs">0</div>
+            <div class="stat-label">Active Subscriptions</div>
+          </div>
+          <div class="trend-badge" id="trend-subs" style="background:rgba(99,102,241,0.1); color:var(--brand-primary); padding:4px 8px; border-radius:4px; font-size:12px; font-weight:700">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card yellow" style="border-left:4px solid #eab308">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="stat-value"><span id="kpi-rating">0.0</span> <span style="font-size:14px;color:var(--text-muted)">/ 5</span></div>
+            <div class="stat-label">Average Rating</div>
+          </div>
+          <div style="color:var(--text-muted); font-size:12px; font-weight:600"><span id="kpi-reviews">0</span> reviews</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Charts Row -->
+    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:var(--space-6); margin-bottom:var(--space-6)">
+      <!-- Earnings Trend Chart -->
+      <div class="section-card">
+        <h3 class="section-card-title">Earnings Breakdown</h3>
+        <div style="height:300px;width:100%;padding-top:var(--space-4)">
+          <canvas id="earningsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Revenue Breakdown Donut -->
+      <div class="section-card">
+        <h3 class="section-card-title">Revenue Source</h3>
+        <div style="height:220px;width:100%;padding-top:var(--space-2);position:relative">
+          <canvas id="revenueSourceChart"></canvas>
+          <div style="position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); text-align:center">
+            <div style="font-size:12px; color:var(--text-muted)">Total</div>
+            <div style="font-size:18px; font-weight:800; color:var(--text)" id="donut-total">₹0</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:var(--space-4); padding-top:var(--space-4); border-top:1px solid var(--border)">
+          <div style="text-align:center">
+            <div style="font-size:12px; color:var(--text-muted)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand-primary);margin-right:4px"></span>Subscriptions</div>
+            <div style="font-size:16px; font-weight:700" id="donut-subs-val">₹0</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:12px; color:var(--text-muted)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:4px"></span>One-time</div>
+            <div style="font-size:16px; font-weight:700" id="donut-one-val">₹0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Insights Row -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:var(--space-6); margin-bottom:var(--space-8)">
+      
+      <!-- Order Status -->
+      <div class="section-card">
+        <h3 class="section-card-title"><i class="fa fa-tasks text-muted"></i> Order Overview</h3>
+        <div style="margin-top:var(--space-4)">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+            <span style="font-weight:600; font-size:14px">Completed</span>
+            <span style="font-weight:700" id="ord-comp">0</span>
+          </div>
+          <div style="width:100%; background:var(--bg-card); border-radius:4px; height:8px; margin-bottom:var(--space-4)">
+            <div id="ord-comp-bar" style="height:100%; background:var(--green); border-radius:4px; width:0%"></div>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+            <span style="font-weight:600; font-size:14px">Pending</span>
+            <span style="font-weight:700" id="ord-pend">0</span>
+          </div>
+          <div style="width:100%; background:var(--bg-card); border-radius:4px; height:8px; margin-bottom:var(--space-4)">
+            <div id="ord-pend-bar" style="height:100%; background:var(--orange); border-radius:4px; width:0%"></div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+            <span style="font-weight:600; font-size:14px">Cancelled</span>
+            <span style="font-weight:700" id="ord-canc">0</span>
+          </div>
+          <div style="width:100%; background:var(--bg-card); border-radius:4px; height:8px">
+            <div id="ord-canc-bar" style="height:100%; background:var(--red); border-radius:4px; width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Items & Customers -->
+      <div class="section-card" style="display:flex; flex-direction:column; gap:var(--space-4)">
+        <div>
+          <h3 class="section-card-title"><i class="fa fa-utensils text-orange"></i> Popular Items</h3>
+          <div id="top-items-list" style="margin-top:var(--space-3); display:flex; flex-direction:column; gap:8px">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+        <hr style="border-color:var(--border); margin:var(--space-2) 0">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4)">
+          <div>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:600">Peak Order Time</div>
+            <div style="font-size:16px; font-weight:700; color:var(--orange); margin-top:4px" id="peak-time-val">-</div>
+          </div>
+          <div>
+            <div style="font-size:12px; color:var(--text-muted); font-weight:600">Customer Retention</div>
+            <div style="font-size:16px; font-weight:700; color:var(--green); margin-top:4px" id="retention-val">0%</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
+
+<style>
+/* New Dashboard Specific CSS */
+.stats-grid .stat-card {
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+.stats-grid .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.top-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-body);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.top-item-row .badge { background:white; color:var(--text); box-shadow:var(--shadow-sm) }
+.insight-box {
+  background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(8,201,82,0.05));
+  border-left: 4px solid var(--brand-primary);
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const ctx = document.getElementById('earningsChart').getContext('2d');
-  
-  // Create gradient
-  let gradient = ctx.createLinearGradient(0, 0, 0, 350);
-  gradient.addColorStop(0, 'rgba(243, 154, 31, 0.8)'); // var(--orange)
-  gradient.addColorStop(1, 'rgba(243, 154, 31, 0.2)');
+let earningsChartInst = null;
+let donutChartInst = null;
 
-  new Chart(ctx, {
+document.addEventListener('DOMContentLoaded', function() {
+  initCharts();
+  loadAnalytics();
+
+  // Auto-refresh every 60 seconds for real-time feel
+  setInterval(() => {
+    loadAnalytics(true); // silent refresh
+  }, 60000);
+});
+
+function initCharts() {
+  const eCtx = document.getElementById('earningsChart').getContext('2d');
+  let gradient = eCtx.createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, 'rgba(243, 154, 31, 0.8)');
+  gradient.addColorStop(1, 'rgba(243, 154, 31, 0.1)');
+
+  earningsChartInst = new Chart(eCtx, {
     type: 'bar',
-    data: {
-      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      datasets: [{
-        label: 'Earnings (₹)',
-        data: [400, 600, 450, 800, 1000, 1200, 1100],
-        backgroundColor: gradient,
-        borderRadius: 4,
-        borderWidth: 0,
-        barPercentage: 0.6
-      }]
-    },
+    data: { labels: [], datasets: [{ label: 'Earnings (₹)', data: [], backgroundColor: gradient, borderRadius: 4, barPercentage: 0.6 }] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1E293B',
-          padding: 12,
-          titleFont: { family: 'Inter', size: 14 },
-          bodyFont: { family: 'Inter', size: 14 },
-          callbacks: {
-            label: function(context) {
-              return '₹' + context.parsed.y;
-            }
-          }
-        }
-      },
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#1E293B', padding: 12, callbacks: { label: c => '₹' + c.parsed.y } } },
       scales: {
-        y: {
-          beginAtZero: true,
-          grid: {
-            color: 'rgba(0,0,0,0.05)',
-            drawBorder: false
-          },
-          ticks: {
-            font: { family: 'Inter', size: 12 },
-            color: '#64748b',
-            callback: function(value) {
-              return '₹' + value;
-            }
-          }
-        },
-        x: {
-          grid: { display: false },
-          ticks: {
-            font: { family: 'Inter', size: 12, weight: '600' },
-            color: '#475569'
-          }
-        }
-      },
-      animation: {
-        y: {
-          duration: 1000,
-          easing: 'easeOutQuart'
-        }
+        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => '₹'+v } },
+        x: { grid: { display: false } }
       }
     }
   });
-});
+
+  const dCtx = document.getElementById('revenueSourceChart').getContext('2d');
+  donutChartInst = new Chart(dCtx, {
+    type: 'doughnut',
+    data: { labels: ['Subscriptions', 'One-time Orders'], datasets: [{ data: [0,0], backgroundColor: ['#6366f1', '#f39a1f'], borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '75%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ₹' + c.parsed } } }
+    }
+  });
+}
+
+function loadAnalytics(silent = false) {
+  const range = document.getElementById('timeRangeFilter').value;
+  if(!silent) document.getElementById('smartInsightsContainer').innerHTML = '<div style="padding:16px;text-align:center"><i class="fa fa-spinner fa-spin text-orange"></i> Loading insights...</div>';
+  document.getElementById('smartInsightsContainer').style.display = 'block';
+
+  fetch(`/api/provider/analytics/data?range=${range}`)
+    .then(res => res.json())
+    .then(data => {
+      // 1. Update Top KPIs
+      animateValue('kpi-earnings', data.overview.earnings);
+      animateValue('kpi-orders', data.overview.orders);
+      animateValue('kpi-subs', data.subscriptions.active, '', false);
+      document.getElementById('kpi-rating').innerText = data.overview.rating.toFixed(1);
+      document.getElementById('kpi-reviews').innerText = data.overview.reviews_count;
+
+      updateTrend('trend-earnings', data.overview.earnings_growth);
+      updateTrend('trend-orders', data.overview.orders_growth);
+      
+      const subGrowth = data.subscriptions.growth;
+      const subTrendEl = document.getElementById('trend-subs');
+      subTrendEl.innerText = subGrowth >= 0 ? `+${subGrowth} new` : `${subGrowth} lost`;
+      subTrendEl.style.color = subGrowth >= 0 ? 'var(--brand-primary)' : 'var(--red)';
+      subTrendEl.style.background = subGrowth >= 0 ? 'rgba(99,102,241,0.1)' : 'rgba(239,68,68,0.1)';
+
+      // 2. Update Charts
+      earningsChartInst.data.labels = data.chart.labels;
+      earningsChartInst.data.datasets[0].data = data.chart.data;
+      earningsChartInst.update();
+
+      const rSubs = data.revenue_breakdown.subscriptions;
+      const rOne = data.revenue_breakdown.one_time;
+      donutChartInst.data.datasets[0].data = [rSubs, rOne];
+      donutChartInst.update();
+      document.getElementById('donut-total').innerText = `₹${Math.floor(rSubs + rOne)}`;
+      document.getElementById('donut-subs-val').innerText = `₹${Math.floor(rSubs)}`;
+      document.getElementById('donut-one-val').innerText = `₹${Math.floor(rOne)}`;
+
+      // 3. Update Order Overview
+      const oC = data.order_overview.completed;
+      const oP = data.order_overview.pending;
+      const oX = data.order_overview.cancelled;
+      const oTot = oC + oP + oX || 1; // prevent div by zero
+      document.getElementById('ord-comp').innerText = oC;
+      document.getElementById('ord-pend').innerText = oP;
+      document.getElementById('ord-canc').innerText = oX;
+      document.getElementById('ord-comp-bar').style.width = `${(oC/oTot)*100}%`;
+      document.getElementById('ord-pend-bar').style.width = `${(oP/oTot)*100}%`;
+      document.getElementById('ord-canc-bar').style.width = `${(oX/oTot)*100}%`;
+
+      // 4. Update Top Items & Secondary Stats
+      const topList = document.getElementById('top-items-list');
+      if (data.top_items.length > 0) {
+        topList.innerHTML = data.top_items.map(item => `
+          <div class="top-item-row">
+            <span style="font-weight:600">${item.name}</span>
+            <span class="badge">${item.orders} orders</span>
+          </div>
+        `).join('');
+      } else {
+        topList.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:10px;font-size:14px">No orders in this period</div>`;
+      }
+
+      document.getElementById('peak-time-val').innerText = data.peak_time;
+      document.getElementById('retention-val').innerText = `${data.customer_insights.retention_rate}%`;
+
+      // 5. Smart Insights Box
+      if (data.insights && data.insights.length > 0) {
+        document.getElementById('smartInsightsContainer').innerHTML = `
+          <div class="insight-box">
+            <div style="font-size:24px; color:var(--brand-primary)"><i class="fa fa-lightbulb"></i></div>
+            <div>
+              <h4 style="margin-bottom:4px">Smart Insights</h4>
+              <ul style="margin:0; padding-left:16px; color:var(--text-muted); font-size:14px">
+                ${data.insights.map(i => `<li style="margin-bottom:4px">${i}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        `;
+      } else {
+        document.getElementById('smartInsightsContainer').style.display = 'none';
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      if(!silent) document.getElementById('smartInsightsContainer').innerHTML = '<div style="color:var(--red)">Failed to load data.</div>';
+    });
+}
+
+function updateTrend(elId, val) {
+  const el = document.getElementById(elId);
+  if (val >= 0) {
+    el.innerText = `+${val}%`;
+    el.style.color = 'var(--green)';
+    el.style.background = 'rgba(8,201,82,0.1)';
+  } else {
+    el.innerText = `${val}%`;
+    el.style.color = 'var(--red)';
+    el.style.background = 'rgba(239,68,68,0.1)';
+  }
+}
+
+function animateValue(id, end, prefix='', isCurrency=true) {
+  const el = document.getElementById(id);
+  const start = parseInt(el.innerText.replace(/[^0-9]/g, '')) || 0;
+  const target = Math.floor(end);
+  if (start === target) return;
+  
+  const duration = 1000;
+  const startTime = performance.now();
+  
+  function update(time) {
+    const elapsed = time - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out quad
+    const easeOut = 1 - (1 - progress) * (1 - progress);
+    const current = Math.floor(start + (target - start) * easeOut);
+    el.innerText = isCurrency ? current.toLocaleString('en-IN') : current;
+    if (progress < 1) requestAnimationFrame(update);
+    else el.innerText = isCurrency ? target.toLocaleString('en-IN') : target;
+  }
+  requestAnimationFrame(update);
+}
+
+function exportReport() {
+  const range = document.getElementById('timeRangeFilter').selectedOptions[0].text;
+  alert(`Exporting Deep Analytics Report for '${range}'.\nIn a production environment, this would download a customized CSV or PDF summary of all the metrics displayed on this dashboard.`);
+}
 </script>
 {% endblock %}

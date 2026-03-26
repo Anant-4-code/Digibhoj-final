@@ -21,8 +21,13 @@ for path_cand in [base_dir / "assets", base_dir / "public" / "assets", Path.cwd(
         break
 
 # Create tables on startup
+import asyncio
+
 @app.on_event("startup")
 def startup():
+    from backend.services.cron import daily_subscription_job
+    asyncio.create_task(daily_subscription_job())
+    
     create_tables()
     # On Vercel, the DB is in /tmp and starts empty. Auto-seed it for the demo.
     if os.environ.get("VERCEL"):

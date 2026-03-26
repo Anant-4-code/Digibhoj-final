@@ -104,6 +104,7 @@
               <td style="padding:var(--space-4);font-weight:700">₹{{ m.price|int }}</td>
               <td style="padding:var(--space-4);text-align:right">
                 <button class="btn btn-ghost btn-sm btn-edit-meal" 
+                        data-modal-open="editMealModal"
                         data-id="{{ m.id }}"
                         data-name="{{ m.name|escape }}"
                         data-price="{{ m.price|int }}"
@@ -159,12 +160,13 @@
             <div style="margin-top:var(--space-6);display:flex;gap:var(--space-2)">
               <button class="btn btn-outline btn-sm btn-edit-plan" 
                       style="flex:1"
+                      data-modal-open="editPlanModal"
                       data-id="{{ p.id }}"
                       data-name="{{ p.name|escape }}"
                       data-description="{{ p.description|escape }}"
                       data-price="{{ p.price|int }}"
                       data-duration="{{ p.duration }}"
-                      data-features="{{ p.features|join(',')|escape }}">
+                      data-features="{{ (p.features|join(',') if p.features else '')|escape }}">
                 Edit
               </button>
               <form action="/provider/action/plan/toggle/{{ p.id }}" method="POST" style="flex:1;margin:0">
@@ -411,18 +413,19 @@ window.addEventListener('click', e => {
 function openEditModal(data) {
   const modal = document.getElementById('editMealModal');
   const form = document.getElementById('editMealForm');
+  if (!modal || !form) return;
   
   form.action = `/provider/action/meal/update/${data.id}`;
-  document.getElementById('edit_name').value = data.name;
-  document.getElementById('edit_price').value = data.price;
-  document.getElementById('edit_category').value = data.category;
-  document.getElementById('edit_description').value = data.description;
-  document.getElementById('edit_image_url').value = data.image;
+  if (document.getElementById('edit_name')) document.getElementById('edit_name').value = data.name || '';
+  if (document.getElementById('edit_price')) document.getElementById('edit_price').value = data.price || 0;
+  if (document.getElementById('edit_category')) document.getElementById('edit_category').value = data.category || 'Lunch';
+  if (document.getElementById('edit_description')) document.getElementById('edit_description').value = data.description || '';
+  if (document.getElementById('edit_image_url')) document.getElementById('edit_image_url').value = data.image || '';
   
   if (data.isveg === 'True' || data.isveg === 'true') {
-    document.getElementById('edit_veg_true').checked = true;
+    if (document.getElementById('edit_veg_true')) document.getElementById('edit_veg_true').checked = true;
   } else {
-    document.getElementById('edit_veg_false').checked = true;
+    if (document.getElementById('edit_veg_false')) document.getElementById('edit_veg_false').checked = true;
   }
   
   modal.classList.add('active');
@@ -431,13 +434,20 @@ function openEditModal(data) {
 function openEditPlanModal(data) {
   const modal = document.getElementById('editPlanModal');
   const form = document.getElementById('editPlanForm');
+  if (!modal || !form) return;
   
   form.action = `/provider/action/plan/update/${data.id}`;
-  document.getElementById('edit_plan_name').value = data.name;
-  document.getElementById('edit_plan_price').value = data.price;
-  document.getElementById('edit_plan_duration').value = data.duration;
-  document.getElementById('edit_plan_description').value = data.description;
-  document.getElementById('edit_plan_features').value = data.features;
+  if (document.getElementById('edit_plan_name')) document.getElementById('edit_plan_name').value = data.name || '';
+  if (document.getElementById('edit_plan_price')) document.getElementById('edit_plan_price').value = data.price || 0;
+  
+  // Robust duration selection
+  if (document.getElementById('edit_plan_duration')) {
+    const durValue = (data.duration || 'weekly').toLowerCase();
+    document.getElementById('edit_plan_duration').value = durValue;
+  }
+  
+  if (document.getElementById('edit_plan_description')) document.getElementById('edit_plan_description').value = data.description || '';
+  if (document.getElementById('edit_plan_features')) document.getElementById('edit_plan_features').value = data.features || '';
   
   modal.classList.add('active');
 }
@@ -445,12 +455,14 @@ function openEditPlanModal(data) {
 document.addEventListener('click', e => {
   const mealBtn = e.target.closest('.btn-edit-meal');
   if (mealBtn) {
+    e.preventDefault();
     openEditModal(mealBtn.dataset);
     return;
   }
   
   const planBtn = e.target.closest('.btn-edit-plan');
   if (planBtn) {
+    e.preventDefault();
     openEditPlanModal(planBtn.dataset);
     return;
   }

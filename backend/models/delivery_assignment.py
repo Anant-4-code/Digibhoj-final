@@ -20,6 +20,13 @@ class DeliveryAssignment(Base):
     pickup_location = Column(Text)
     drop_location = Column(Text)
     status = Column(SAEnum(DeliveryAssignmentStatus), default=DeliveryAssignmentStatus.assigned)
+    
+    # Earnings System
+    base_fee = Column(Float, default=0.0)
+    distance_fee = Column(Float, default=0.0)
+    bonus = Column(Float, default=0.0)
+    total_amount = Column(Float, default=0.0)
+    
     assigned_at = Column(DateTime, server_default=func.now())
 
     order = relationship("Order", back_populates="assignment")

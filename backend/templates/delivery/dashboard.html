@@ -30,8 +30,9 @@
         </div>
       </div>
 
-      <div class="badge badge-gray" style="background:rgba(255,255,255,0.2);color:white;text-transform:none">
-        <i class="fa fa-circle" style="color:#00e676;font-size:10px;margin-right:4px"></i> {{ agent.availability.value|title }}
+      <div class="availability-toggle" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);padding:4px 12px;border-radius:20px;cursor:pointer" onclick="toggleAvailability(this)" data-status="{{ agent.availability.value }}">
+        <div class="toggle-circle" style="width:10px;height:10px;border-radius:50%;background:{% if agent.availability.value == 'online' %}#00e676{% else %}#aaa{% endif %}"></div>
+        <span class="toggle-text" style="color:white;font-size:12px;font-weight:600">{{ 'Online' if agent.availability.value == 'online' else 'Offline' }}</span>
       </div>
       
       <div class="dropdown" data-dropdown>
@@ -193,7 +194,7 @@
         <div style="display:flex;flex-direction:column;gap:var(--space-4);max-height:600px;overflow-y:auto;padding-right:var(--space-2)" class="custom-scrollbar">
           {% if active_tasks %}
             {% for task in active_tasks %}
-            <div class="task-card-status-{{ task.status.value }}" style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
+            <div class="task-card-status-{{ task.status.value }}" style="flex-shrink:0;background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
               
               <div class="task-header-status-{{ task.status.value }}" style="padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
                 <strong style="color:var(--text);font-size:1rem">Order #{{ task.order_id }}</strong>
@@ -231,36 +232,44 @@
                   <div style="font-size:var(--sm);color:var(--text-muted)">Est. Earnings</div>
                   <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ (task.order.total_price * 0.1)|int }}</div>
                 </div>
-                
                 <div>
-                  {% if task.status.value == 'assigned' %}
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
-                    <form action="/delivery/action/accept/{{ task.id }}" method="POST">
-                      <button type="submit" class="btn btn-primary btn-full magnetic" style="background:var(--orange);color:white">
-                        <i class="fa fa-check"></i> Accept
-                      </button>
-                    </form>
-                    <form action="/delivery/action/reject/{{ task.id }}" method="POST" onsubmit="return confirm('Are you sure you want to reject this delivery?')">
-                      <button type="submit" class="btn btn-outline btn-full magnetic" style="border-color:var(--red);color:var(--red)">
-                        <i class="fa fa-times"></i> Reject
-                      </button>
-                    </form>
+                  {% if task.status == 'assigned' or task.status.value == 'assigned' %}
+                  <div class="assignment-timer-container" data-task-id="{{ task.id }}">
+                    <div style="text-align:center;color:var(--red);font-weight:700;margin-bottom:8px;font-size:14px;">
+                        <i class="fa fa-stopwatch"></i> <span class="countdown-text" id="countdown-{{ task.id }}">15</span>s to Accept
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+                      <form action="/delivery/action/accept/{{ task.id }}" method="POST">
+                        <button type="submit" class="btn btn-primary btn-full magnetic" style="background:var(--orange);color:white">
+                          <i class="fa fa-check"></i> Accept
+                        </button>
+                      </form>
+                      <form action="/delivery/action/reject/{{ task.id }}" id="form-reject-{{ task.id }}" method="POST">
+                        <button type="button" onclick="document.getElementById('form-reject-{{ task.id }}').submit()" class="btn btn-outline btn-full magnetic" style="border-color:var(--red);color:var(--red)">
+                          <i class="fa fa-times"></i> Reject
+                        </button>
+                      </form>
+                    </div>
                   </div>
-                  {% elif task.status.value == 'accepted' %}
+                  {% elif task.status == 'accepted' or task.status.value == 'accepted' %}
                   <button class="btn btn-warning btn-full magnetic" style="margin-bottom:8px" onclick="updateCurrentTaskStatus('picked_up', '{{ task.order_id }}')">
                     <i class="fa fa-box-open"></i> Mark Picked Up
                   </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
-                  {% elif task.status.value == 'picked_up' %}
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% elif task.status == 'picked_up' or task.status.value == 'picked_up' %}
                   <button class="btn btn-primary btn-full magnetic" style="background:#1565c0;color:white;margin-bottom:8px" onclick="updateCurrentTaskStatus('out_for_delivery', '{{ task.order_id }}')">
                     <i class="fa fa-truck-fast"></i> Mark Out for Delivery
                   </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
-                  {% elif task.status.value == 'delivering' %}
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% elif task.status == 'out_for_delivery' or task.status.value == 'out_for_delivery' %}
                   <button class="btn btn-success btn-full magnetic" style="background:var(--green);color:white;margin-bottom:8px" onclick="openOTPModal('{{ task.order_id }}')">
                     <i class="fa fa-check-circle"></i> Complete Drop-off
                   </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="window.deliveryTracker.initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
+                  {% else %}
+                  <div style="text-align:center;padding:10px;background:var(--bg-color);border-radius:var(--radius-md);font-size:12px;color:var(--text-muted)">
+                    Status: {{ task.status.value or task.status }}
+                  </div>
                   {% endif %}
                 </div>
                 
@@ -288,11 +297,11 @@
     <h3 style="margin-bottom:var(--space-2)">Confirm Delivery</h3>
     <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">Enter the 4-digit OTP provided by the customer to complete this delivery.</p>
     
-    <div style="display:flex;gap:var(--space-3);justify-content:center;margin-bottom:var(--space-6)">
-      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+    <div style="display:flex;gap:var(--space-3);justify-content:center;margin-bottom:var(--space-6)" id="otp-inputs">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-1" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-2" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-3" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-4" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
     </div>
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
@@ -310,25 +319,43 @@
 window.agentId = "{{ agent.id }}";
 let currentOrderIdForDelivery = null;
 
-function updateCurrentTaskStatus(status, orderId) {
+function updateCurrentTaskStatus(status, orderId, otp = null) {
+    console.log(`Updating order ${orderId} status to ${status}...`);
     const endpointMap = {
         'picked_up': `/api/delivery/picked/${orderId}`,
         'out_for_delivery': `/api/delivery/out-for-delivery/${orderId}`,
-        'delivered': `/api/delivery/delivered/${orderId}`
+        'delivered': `/api/delivery/delivered/${orderId}` + (otp ? `?otp=${otp}` : '')
     };
     
-    fetch(endpointMap[status], { method: 'PUT' })
+    const url = endpointMap[status];
+    if (!url) {
+        console.error("Invalid status:", status);
+        return;
+    }
+
+    fetch(url, { method: 'PUT' })
     .then(r => {
         if (r.ok) {
             showToast(`Delivery status updated to ${status.replace(/_/g, ' ')}! 🚚`, 'success');
             setTimeout(() => window.location.reload(), 1000);
+        } else {
+            r.json().then(data => {
+                console.error("Status update failed:", data);
+                showToast(data.detail || "Update failed", "error");
+            });
         }
+    })
+    .catch(err => {
+        console.error("Network error updating status:", err);
+        showToast("Network error. Please try again.", "error");
     });
 }
 
 function openOTPModal(orderId) {
+    console.log("Opening OTP Modal for Order:", orderId);
     currentOrderIdForDelivery = orderId;
     document.getElementById('otp-modal').style.display = 'flex';
+    document.getElementById('otp-1').focus();
 }
 
 function closeOTPModal() {
@@ -336,9 +363,99 @@ function closeOTPModal() {
 }
 
 function verifyOTPAndDeliver() {
-    // Simulate OTP verification and complete delivery
-    updateCurrentTaskStatus('delivered', currentOrderIdForDelivery);
+    // Get OTP value
+    const otp = Array.from(document.querySelectorAll('.otp-input')).map(i => i.value).join('');
+    console.log("Verifying OTP:", otp);
+    
+    if (otp.length < 4) {
+        showToast("Please enter a valid 4-digit OTP", "warning");
+        return;
+    }
+    
+    updateCurrentTaskStatus('delivered', currentOrderIdForDelivery, otp);
     closeOTPModal();
+}
+
+// OTP Auto-focus Next logic
+document.addEventListener('DOMContentLoaded', () => {
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+            if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+        });
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && e.target.value.length === 0 && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+    });
+    document.querySelectorAll('.assignment-timer-container').forEach(container => {
+        let remaining = 15;
+        const taskId = container.dataset.taskId;
+        const textEl = document.getElementById('countdown-' + taskId);
+        
+        const interval = setInterval(() => {
+            remaining--;
+            if(textEl) textEl.textContent = remaining;
+            
+            if(remaining <= 0) {
+                clearInterval(interval);
+                container.innerHTML = "<div style='text-align:center;color:var(--red);padding:10px;font-weight:bold;'><i class='fa fa-times-circle'></i> Offer Expired</div>";
+                document.getElementById('form-reject-' + taskId).submit();
+            }
+        }, 1000);
+    });
+
+    // Real-Time Earnings and Deliveries Polling
+    setInterval(async () => {
+        try {
+            const res = await fetch(`/api/delivery/earnings/${window.agentId}`);
+            if (res.ok) {
+                const data = await res.json();
+                
+                const earningsEl = document.getElementById('todays-earnings');
+                if (earningsEl && data.total_earnings !== undefined) {
+                    const currentEarnings = parseFloat(earningsEl.innerText.replace(/,/g, '')) || 0;
+                    if (data.total_earnings > currentEarnings) {
+                        earningsEl.innerText = Math.floor(data.total_earnings);
+                    }
+                }
+                
+                const deliveriesEl = document.getElementById('todays-deliveries');
+                if (deliveriesEl && data.completed_deliveries !== undefined) {
+                    const currentDeliveries = parseInt(deliveriesEl.innerText.replace(/,/g, '')) || 0;
+                    if (data.completed_deliveries > currentDeliveries) {
+                        deliveriesEl.innerText = data.completed_deliveries;
+                    }
+                }
+            }
+        } catch (e) { console.error('Error fetching real-time dashboard stats', e); }
+    }, 15000);
+});
+
+async function toggleAvailability(el) {
+    const current = el.dataset.status;
+    const next = current === 'online' ? 'offline' : 'online';
+    
+    // Optimistic UI update
+    el.dataset.status = next;
+    el.querySelector('.toggle-text').textContent = next.charAt(0).toUpperCase() + next.slice(1);
+    el.querySelector('.toggle-circle').style.background = next === 'online' ? '#00e676' : '#aaa';
+    
+    try {
+        const res = await fetch(`/api/delivery/availability/{{ agent.id }}?status=${next}`, { method: 'PUT' });
+        if(!res.ok) throw new Error("Failed");
+        showToast(`You are now ${next}!`, 'success');
+        if(next === 'online' && window.deliveryTracker) window.deliveryTracker.startTracking();
+    } catch(e) {
+        // Revert on fail
+        el.dataset.status = current;
+        el.querySelector('.toggle-text').textContent = current.charAt(0).toUpperCase() + current.slice(1);
+        el.querySelector('.toggle-circle').style.background = current === 'online' ? '#00e676' : '#aaa';
+        showToast("Could not update status.", 'error');
+    }
 }
 </script>
 

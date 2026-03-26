@@ -26,25 +26,49 @@
       <div class="dropdown" data-dropdown style="margin-right:var(--space-2)">
         <div class="cart-badge" style="color:white;font-size:1.2rem;cursor:pointer" data-dropdown-trigger>
           <i class="fa-regular fa-bell"></i>
-          <span class="count" style="background:var(--red);top:-8px;right:-8px">3</span>
+          {% set unread_count = notifications|selectattr('is_read', 'equalto', 0)|list|length %}
+          {% if unread_count > 0 %}
+          <span class="count" style="background:var(--red);top:-8px;right:-8px">{{ unread_count }}</span>
+          {% endif %}
         </div>
         <div class="dropdown-menu" style="width:300px;right:-10px;top:45px">
           <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between">
-            Notifications <span style="font-size:10px;color:var(--orange);cursor:pointer">Mark all as read</span>
+            Notifications 
+            {% if unread_count > 0 %}
+            <span style="font-size:10px;color:var(--orange);cursor:pointer" onclick="markAllNotificationsRead()">Mark all as read</span>
+            {% endif %}
           </div>
           <div style="max-height:300px;overflow-y:auto">
-            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border);opacity:0.6">
-              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">Order Delivered <i class="fa fa-check-circle text-green" style="margin-left:4px"></i></div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Your order from Annapurna Veg Mess has been delivered. Enjoy your meal!</div>
-            </a>
-            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
-              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">New Message <i class="fa fa-envelope text-orange" style="margin-left:4px"></i></div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">The delivery provider has arrived at the location.</div>
-            </a>
-            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal">
-              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px">Welcome to DigiBhoj ✨</div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Explore the best mess providers around you.</div>
-            </a>
+            {% if notifications %}
+              {% for n in notifications %}
+              <div class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border); {{ 'opacity:0.7;' if n.is_read else '' }}">
+                <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;display:flex;align-items:center;justify-content:space-between">
+                  <span>
+                    {% if n.ntype.value == 'order_update' %}
+                      Order Update <i class="fa fa-info-circle text-brand" style="margin-left:4px"></i>
+                    {% elif n.ntype.value == 'delivery_update' %}
+                      Delivery Alert <i class="fa fa-truck text-orange" style="margin-left:4px"></i>
+                    {% else %}
+                      System Alert <i class="fa fa-bell text-gray" style="margin-left:4px"></i>
+                    {% endif %}
+                  </span>
+                  <span style="font-size:10px;color:var(--text-muted)">{{ n.created_at.strftime('%H:%M') if n.created_at else '' }}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);line-height:1.4">
+                  {% if 'OTP' in n.message %}
+                    {{ n.message|replace('OTP', '<strong style="color:var(--brand-primary);font-size:1.1em">OTP</strong>')|safe }}
+                  {% else %}
+                    {{ n.message }}
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:var(--sm)">
+                <i class="fa fa-bell-slash" style="display:block;font-size:1.5rem;margin-bottom:10px;opacity:0.3"></i>
+                No new notifications
+              </div>
+            {% endif %}
           </div>
           <a href="#" class="dropdown-item" style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View All</a>
         </div>
@@ -63,6 +87,7 @@
         <div class="dropdown-menu">
           <a href="/customer/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
           <a href="/customer/orders" class="dropdown-item"><i class="fa fa-list-alt"></i> My Orders</a>
+          <a href="/customer/subscriptions" class="dropdown-item"><i class="fa fa-calendar-check"></i> Subscriptions</a>
           <div class="dropdown-divider"></div>
           <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
         </div>
@@ -74,7 +99,7 @@
   <div class="mobile-overlay" id="mobileOverlay"></div>
 
   <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar glass-effect" id="sidebar">
     <div class="sidebar-section">Menu</div>
     <a href="/customer/home" class="sidebar-item active">
       <i class="fa fa-home"></i> Explore
@@ -82,48 +107,67 @@
     <a href="/customer/orders" class="sidebar-item">
       <i class="fa fa-receipt"></i> Orders
     </a>
+    <a href="/customer/subscriptions" class="sidebar-item">
+      <i class="fa fa-calendar-check"></i> Subscriptions
+    </a>
     <a href="/customer/profile" class="sidebar-item">
       <i class="fa fa-user"></i> Profile
     </a>
     
-    <div class="sidebar-section" style="margin-top:var(--space-6)">Filters</div>
-    <div style="padding:0 var(--space-4) var(--space-4)">
+<div class="sidebar-compact-section" style="margin-top:var(--space-6)">
+      <label class="sidebar-compact-label" style="font-size:12px;color:var(--brand-primary);margin-bottom:var(--space-4)">✨ Quick Filters</label>
       <form action="/customer/home" method="GET">
         {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
         
         <div style="margin-bottom:var(--space-4)">
-          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Cuisine</label>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
-              <input type="radio" name="cuisine" value="" {% if not cuisine %}checked{% endif %}> All
-            </label>
+          <label class="sidebar-compact-label">Cuisine</label>
+          <div class="cuisine-grid">
+            <div class="chip-item">
+              <input type="radio" name="cuisine" id="c-all" value="" class="chip-input" {% if not cuisine %}checked{% endif %} onchange="this.form.submit()">
+              <label for="c-all" class="chip-label">All</label>
+            </div>
+            {% set c_map = {
+              'North Indian': 'North',
+              'South Indian': 'South',
+              'Maharashtrian': 'Maha',
+              'Gujarati': 'Guj',
+              'Punjabi': 'Punjabi',
+              'Multi-Cuisine': 'Multi'
+            } %}
             {% for c in ['North Indian', 'South Indian', 'Maharashtrian', 'Gujarati', 'Punjabi', 'Multi-Cuisine'] %}
-            <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
-              <input type="radio" name="cuisine" value="{{ c }}" {% if cuisine == c %}checked{% endif %}> {{ c }}
-            </label>
+            <div class="chip-item">
+              <input type="radio" name="cuisine" id="c-{{ loop.index }}" value="{{ c }}" class="chip-input" {% if cuisine == c %}checked{% endif %} onchange="this.form.submit()">
+              <label for="c-{{ loop.index }}" class="chip-label">{{ c_map.get(c, c) }}</label>
+            </div>
             {% endfor %}
           </div>
         </div>
         
         <div style="margin-bottom:var(--space-4)">
-          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Rating</label>
-          <select name="rating" class="form-control" style="font-size:var(--sm);padding:6px">
-            <option value="">Any Rating</option>
-            <option value="4" {% if request.query_params.get('rating') == '4' %}selected{% endif %}>4.0+ Stars</option>
-            <option value="3" {% if request.query_params.get('rating') == '3' %}selected{% endif %}>3.0+ Stars</option>
-          </select>
+          <label class="sidebar-compact-label">Rating</label>
+          <div class="rating-select-wrapper">
+            <select name="rating" class="form-control" style="font-size:11px;padding:8px 12px;height:auto;border-radius:var(--radius-sm);box-shadow:inset 0 1px 2px rgba(0,0,0,0.02)" onchange="this.form.submit()">
+              <option value="">⭐ Any Rating</option>
+              <option value="4" {% if request.query_params.get('rating') == '4' %}selected{% endif %}>⭐ 4.0+</option>
+              <option value="3" {% if request.query_params.get('rating') == '3' %}selected{% endif %}>⭐ 3.0+</option>
+            </select>
+          </div>
         </div>
 
         <div style="margin-bottom:var(--space-6)">
-          <label style="font-size:var(--xs);font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:block">Dietary</label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:var(--sm);cursor:pointer">
-            <input type="checkbox" name="veg_only" value="true" {% if request.query_params.get('veg_only') %}checked{% endif %}> Pure Veg
+          <label class="sidebar-compact-label">Veg</label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);padding:6px 10px;border-radius:var(--radius-sm)">
+            <span>🌱 Pure Veg</span>
+            <div class="switch" style="transform: scale(0.7);transform-origin: right">
+              <input type="checkbox" name="veg_only" value="true" {% if request.query_params.get('veg_only') %}checked{% endif %} onchange="this.form.submit()">
+              <span class="slider"></span>
+            </div>
           </label>
         </div>
         
-        <button type="submit" class="btn btn-primary btn-full" style="padding:8px;font-size:var(--sm)">Apply Filters</button>
+        <button type="submit" class="compact-apply-btn">Apply</button>
         {% if cuisine or request.query_params.get('rating') or request.query_params.get('veg_only') %}
-        <a href="/customer/home{% if q %}?q={{ q }}{% endif %}" class="btn btn-outline btn-full" style="margin-top:8px;padding:8px;font-size:var(--sm);text-align:center">Clear All</a>
+        <a href="/customer/home{% if q %}?q={{ q }}{% endif %}" style="display:block;text-align:center;font-size:10px;color:var(--orange);font-weight:700;margin-top:10px;text-transform:uppercase;letter-spacing:1px">Clear All</a>
         {% endif %}
       </form>
     </div>
@@ -193,11 +237,22 @@
           </div>
           
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px dashed var(--border)">
-            <div>
-              <span class="stars">{% for i in range((p.rating|default(0))|int) %}★{% endfor %}{% if (p.rating|default(0)) % 1 >= 0.5 %}½{% endif %}</span>
+            <div class="stars">
+              {% set rating = p.rating|default(0)|float %}
+              {% for i in range(1, 6) %}
+                {% if rating >= i %}
+                  <i class="fa fa-star"></i>
+                {% elif rating >= i - 0.5 %}
+                  <i class="fa fa-star-half-alt"></i>
+                {% else %}
+                  <i class="fa-regular fa-star"></i>
+                {% endif %}
+              {% endfor %}
               <span style="font-size:var(--xs);color:var(--text-muted)">({{ p.total_reviews|default(0) }})</span>
             </div>
-            <span class="btn btn-secondary btn-sm" style="border-radius:4px">View Meals</span>
+            <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+              <span class="btn btn-secondary btn-sm" style="border-radius:4px">View Menu & Subscribe</span>
+            </div>
           </div>
         </div>
       </a>
@@ -213,6 +268,4 @@
       {% endif %}
     </div>
     {% endif %}
-  </main>
-</div>
 {% endblock %}

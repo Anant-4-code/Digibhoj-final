@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}My Subscriptions — DigiBhoj{% endblock %}
+
+{% block extra_head %}
+<style>
+.sub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-6);
+}
+.sub-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border);
+  padding: var(--space-5);
+  position: relative;
+  transition: all var(--t-fast);
+  box-shadow: var(--shadow-sm);
+}
+.sub-card:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
+.sub-card.active-card { border-color: var(--green); background: linear-gradient(135deg, rgba(8,201,82,0.03) 0%, white 60%); }
+.sub-card.expired-card { border-color: var(--border); opacity: 0.72; }
+.sub-card.cancelled-card { border-color: #f87171; background: rgba(248,113,113,0.02); opacity: 0.72; }
+
+.sub-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sub-status-pill.active { background: rgba(8,201,82,0.12); color: var(--green); }
+.sub-status-pill.cancelled { background: rgba(248,113,113,0.12); color: #dc2626; }
+.sub-status-pill.expired { background: var(--bg); color: var(--text-muted); }
+
+.sub-provider-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--text);
+}
+.sub-plan-type {
+  font-size: var(--sm);
+  color: var(--orange);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+.sub-dates {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: var(--space-4);
+}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/customer/home" class="navbar-brand">Digi<span>Bhoj</span></a>
+    </div>
+    <div class="navbar-actions">
+      <a href="/customer/cart" class="cart-badge" style="color:white;font-size:1.2rem;margin-right:var(--space-4)">
+        <i class="fa fa-shopping-cart"></i>
+        {% if cart_count > 0 %}<span class="count">{{ cart_count }}</span>{% endif %}
+      </a>
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px">{{ user.name[0]|upper }}</div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+          <a href="/customer/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
+          <a href="/customer/orders" class="dropdown-item"><i class="fa fa-list-alt"></i> My Orders</a>
+          <a href="/customer/subscriptions" class="dropdown-item"><i class="fa fa-calendar-check"></i> Subscriptions</a>
+          <div class="dropdown-divider"></div>
+          <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar glass-effect" id="sidebar">
+    <div class="sidebar-section">Menu</div>
+    <a href="/customer/home" class="sidebar-item">
+      <i class="fa fa-home"></i> Explore
+    </a>
+    <a href="/customer/orders" class="sidebar-item">
+      <i class="fa fa-receipt"></i> Orders
+    </a>
+    <a href="/customer/subscriptions" class="sidebar-item active">
+      <i class="fa fa-calendar-check"></i> Subscriptions
+    </a>
+    <a href="/customer/profile" class="sidebar-item">
+      <i class="fa fa-user"></i> Profile
+    </a>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content page-enter">
+    <div class="page-header">
+      <h1><i class="fa fa-calendar-check" style="color:var(--orange);margin-right:var(--space-2)"></i> My Subscriptions</h1>
+      <p>Track your active meal plans and delivery schedule</p>
+    </div>
+
+    {% if subscriptions %}
+    <!-- Stats Bar -->
+    {% set active_count = subscriptions | selectattr('status.value', 'equalto', 'active') | list | length %}
+    {% set total_count = subscriptions | length %}
+    <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-6);flex-wrap:wrap">
+      <div class="section-card" style="padding:var(--space-4) var(--space-6);flex:1;min-width:140px;text-align:center">
+        <div style="font-size:2rem;font-weight:800;color:var(--orange)">{{ total_count }}</div>
+        <div style="font-size:var(--xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Total Plans</div>
+      </div>
+      <div class="section-card" style="padding:var(--space-4) var(--space-6);flex:1;min-width:140px;text-align:center">
+        <div style="font-size:2rem;font-weight:800;color:var(--green)">{{ active_count }}</div>
+        <div style="font-size:var(--xs);color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Active Now</div>
+      </div>
+    </div>
+
+    <div class="sub-grid">
+      {% for sub in subscriptions %}
+      {% set st = sub.status.value %}
+      <div class="sub-card {{ st }}-card">
+        <!-- Status Pill -->
+        <div class="sub-status-pill {{ st }}">
+          {% if st == 'active' %}<i class="fa fa-circle" style="font-size:7px"></i> Active
+          {% elif st == 'cancelled' %}<i class="fa fa-times-circle"></i> Cancelled
+          {% else %}<i class="fa fa-clock"></i> Expired{% endif %}
+        </div>
+
+        <div class="sub-provider-name">
+          <i class="fa fa-store" style="color:var(--orange);margin-right:4px"></i>
+          {{ sub.provider.mess_name }}
+        </div>
+        <div class="sub-plan-type">
+          <i class="fa fa-tag"></i>
+          {{ sub.plan.name if sub.plan else sub.plan_type.value|capitalize + ' Plan' }}
+          &nbsp;·&nbsp;
+          {{ 'Weekly (7 days)' if sub.plan_type.value == 'weekly' else 'Monthly (30 days)' }}
+        </div>
+
+        <div class="sub-dates">
+          <div><strong>Start:</strong> {{ sub.start_date.strftime('%d %b %Y') }}</div>
+          <div><strong>End:</strong> {{ sub.end_date.strftime('%d %b %Y') }}</div>
+        </div>
+
+        <!-- Delivery Progress (for active only) -->
+        {% if st == 'active' %}
+        {% set delivered = sub.deliveries | selectattr('status.value', 'equalto', 'delivered') | list | length %}
+        {% set total_deliveries = sub.deliveries | length %}
+        {% if total_deliveries > 0 %}
+        <div style="margin-bottom:var(--space-4)">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px">
+            <span>Deliveries</span>
+            <span>{{ delivered }}/{{ total_deliveries }} completed</span>
+          </div>
+          <div style="background:var(--bg);border-radius:20px;height:6px;overflow:hidden">
+            <div style="height:100%;background:var(--green);border-radius:20px;width:{{ ((delivered / total_deliveries) * 100)|int }}%;transition:width 0.4s ease"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- Actions -->
+        <div style="display:grid;grid-template-columns:1fr{% if st == 'active' %} 1fr{% endif %};gap:var(--space-2)">
+          <a href="/customer/subscriptions/{{ sub.id }}" class="btn btn-primary btn-sm" style="text-align:center">
+            <i class="fa fa-calendar-alt"></i> Track Plan
+          </a>
+          {% if st == 'active' %}
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:var(--red)" onclick="cancelSub({{ sub.id }})">
+            <i class="fa fa-times-circle"></i> Cancel
+          </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <i class="fa fa-calendar-times" style="font-size:3rem;color:var(--border);margin-bottom:var(--space-4)"></i>
+      <h3>No subscriptions yet</h3>
+      <p>Subscribe to a meal plan from any provider for daily automatic deliveries.</p>
+      <a href="/customer/home" class="btn btn-primary" style="margin-top:var(--space-4)">
+        <i class="fa fa-search"></i> Browse Providers
+      </a>
+    </div>
+    {% endif %}
+  </main>
+</div>
+
+<script>
+async function cancelSub(subId) {
+  if (!confirm('Are you sure you want to cancel this subscription?')) return;
+  try {
+    const res = await fetch(`/api/subscriptions/${subId}/cancel`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) { alert('Subscription cancelled.'); window.location.reload(); }
+    else alert(data.detail || 'Failed to cancel');
+  } catch(e) { alert('Error cancelling subscription'); }
+}
+
+// Mobile sidebar toggle
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('mobileOverlay').classList.toggle('active');
+});
+document.getElementById('mobileOverlay').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('mobileOverlay').classList.remove('active');
+});
+
+// Dropdowns
+document.addEventListener('click', e => {
+  const dd = e.target.closest('[data-dropdown]');
+  document.querySelectorAll('[data-dropdown]').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+  if (dd && e.target.closest('[data-dropdown-trigger]')) dd.classList.toggle('open');
+});
+</script>
+{% endblock %}

@@ -18,14 +18,41 @@
       <h2 style="margin-bottom:var(--space-6)">Delivery Details</h2>
       
       <form action="/customer/action/checkout" method="POST" id="checkoutForm">
-        <div class="section-card">
-          <h3 class="section-card-title">1. Delivery Address</h3>
-          <div class="floating-group">
-            <textarea name="delivery_address" id="delivery_address" class="floating-input" required style="min-height:120px">{{ address }}</textarea>
-            <label for="delivery_address" class="floating-label">Full Delivery Address</label>
+          <div class="section-card address-selector-container">
+            <h3 class="section-card-title">1. Delivery Address</h3>
+            
+            <div class="address-grid">
+              <div class="floating-group">
+                <select class="address-state floating-input" style="padding-top:1.2rem;height:3.5rem">
+                  <option value="">-- Select State --</option>
+                </select>
+                <label class="floating-label">State</label>
+              </div>
+              <div class="floating-group">
+                <select class="address-city floating-input" style="padding-top:1.2rem;height:3.5rem" disabled>
+                  <option value="">-- Select City --</option>
+                </select>
+                <label class="floating-label">City</label>
+              </div>
+            </div>
+
+            <div class="floating-group">
+              <textarea class="detailed-address floating-input" style="min-height:80px;padding-top:1.5rem" placeholder=" "></textarea>
+              <label class="floating-label">Detailed Address (Street, House No, Landmark)</label>
+            </div>
+
+            <!-- Hidden field for backend compatibility -->
+            <input type="hidden" name="delivery_address" class="full-address-input" value="{{ address }}" required>
+
+            <div class="address-actions">
+              <button type="button" class="btn-get-location address-btn">
+                <i class="fa fa-location-arrow"></i> Use Current Location
+              </button>
+              <button type="button" class="btn-pick-map address-btn">
+                <i class="fa fa-map-marked-alt"></i> Pick from Map
+              </button>
+            </div>
           </div>
-          <p style="font-size:var(--xs);color:var(--text-muted)"><i class="fa fa-info-circle"></i> Make sure to include landmarks for faster delivery.</p>
-        </div>
         
         <div class="section-card">
           <h3 class="section-card-title">2. Payment Method</h3>
@@ -93,4 +120,8 @@
     
   </div>
 </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/assets/js/address-selector.js"></script>
 {% endblock %}
