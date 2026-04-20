@@ -68,8 +68,8 @@ def process_subscriptions():
                 provider_id=provider.id,
                 total_price=0.0,  # Prepaid via subscription
                 delivery_address=customer.address or "Default Address",
-                payment_method="Prepaid via Subscription",
-                notes=f"Auto-generated from subscription #{sub.id}",
+                payment_method="Subscription", # Tagged to indicate this is covered by the subscription payment
+                notes=f"[SUBSCRIPTION ORDER] Auto-generated from subscription #{sub.id}",
                 order_status=OrderStatus.created,
                 payment_status=PaymentStatus.paid
             )

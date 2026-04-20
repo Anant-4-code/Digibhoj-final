@@ -325,6 +325,16 @@ def create_subscription(data: SubscriptionCreateSchema, request: Request, db: Se
         )
         db.add(delivery)
 
+    # Log payment for revenue tracking
+    payment = Payment(
+        subscription_id=subscription.id,
+        provider_id=provider.id,
+        amount=plan.price,
+        payment_method=data.payment_method,
+        payment_status="paid"
+    )
+    db.add(payment)
+
     db.commit()
     return {"message": f"Successfully subscribed to {meal.name} for {duration_days} days",
             "subscription_id": subscription.id}

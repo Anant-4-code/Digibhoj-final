@@ -180,9 +180,11 @@
       <!-- HEADER HERO -->
       <div class="profile-hero">
         <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; flex:1;">
-          <div class="hero-avatar">
-            <i class="fa fa-store"></i>
+          <div class="hero-avatar" id="avatarContainer" style="cursor:pointer;position:relative;overflow:hidden">
+            <img id="avatarImage" src="/assets/images/provider-default.jpg" style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;top:0;left:0;">
+            <i class="fa fa-store" id="avatarIcon"></i>
             <div class="hero-avatar-edit"><i class="fa fa-pen"></i></div>
+            <input type="file" id="avatarUploadInput" accept="image/*" style="display:none">
           </div>
           <div class="hero-details">
             <div class="hero-name-row">
@@ -313,26 +315,28 @@
           </div>
           
           <div class="docs-3">
-            <div class="doc-card">
-              <i class="fa fa-id-card doc-icon verified"></i>
+            <div class="doc-card" id="card_aadhaar" onclick="document.getElementById('file_aadhaar').click()" style="cursor:pointer">
+              <i class="fa fa-id-card doc-icon" id="icon_aadhaar"></i>
               <div class="doc-title">Aadhaar Card</div>
-              <div class="doc-status verified">Verified</div>
-              <input type="file" id="file_aadhaar" style="display:none" onchange="uploadDoc('aadhaar', this)">
+              <div class="doc-status" id="status_aadhaar">Required</div>
+              <div id="btn_aadhaar" style="background:var(--accent);color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:12px;margin-top:6px;display:inline-block;">UPLOAD</div>
+              <input type="file" id="file_aadhaar" accept="image/*,.pdf" style="display:none" onchange="uploadDoc('aadhaar', this)">
             </div>
             
-            <div class="doc-card">
-              <i class="fa fa-utensils doc-icon verified"></i>
+            <div class="doc-card" id="card_fssai" onclick="document.getElementById('file_fssai').click()" style="cursor:pointer">
+              <i class="fa fa-utensils doc-icon" id="icon_fssai"></i>
               <div class="doc-title">FSSAI License</div>
-              <div class="doc-status verified" style="color:#059669">Active</div>
-              <input type="file" id="file_fssai" style="display:none" onchange="uploadDoc('fssai', this)">
+              <div class="doc-status" id="status_fssai">Required</div>
+              <div id="btn_fssai" style="background:var(--accent);color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:12px;margin-top:6px;display:inline-block;">UPLOAD</div>
+              <input type="file" id="file_fssai" accept="image/*,.pdf" style="display:none" onchange="uploadDoc('fssai', this)">
             </div>
             
-            <div class="doc-card missing" onclick="document.getElementById('file_business_license').click()" style="cursor:pointer">
-              <i class="fa fa-file-invoice doc-icon" style="color:var(--accent)"></i>
+            <div class="doc-card" id="card_business_license" onclick="document.getElementById('file_business_license').click()" style="cursor:pointer">
+              <i class="fa fa-file-invoice doc-icon" id="icon_business_license"></i>
               <div class="doc-title">GST Certificate</div>
-              <div class="doc-status" style="color:var(--accent)">Optional</div>
-              <div style="background:var(--accent);color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:12px;margin-top:6px;">UPLOAD</div>
-              <input type="file" id="file_business_license" style="display:none" onchange="uploadDoc('business_license', this)">
+              <div class="doc-status" id="status_business_license">Optional</div>
+              <div id="btn_business_license" style="background:var(--accent);color:white;font-size:9px;font-weight:800;padding:2px 8px;border-radius:12px;margin-top:6px;display:inline-block;">UPLOAD</div>
+              <input type="file" id="file_business_license" accept="image/*,.pdf" style="display:none" onchange="uploadDoc('business_license', this)">
             </div>
           </div>
         </div>
@@ -450,6 +454,12 @@
       document.getElementById('completion_text').textContent = data.completion_percentage + '%';
       document.getElementById('completion_bar').style.width = data.completion_percentage + '%';
 
+      if(data.basic_info.image_url && !data.basic_info.image_url.includes('provider-default')) {
+        document.getElementById('avatarImage').src = data.basic_info.image_url;
+        document.getElementById('avatarImage').style.display = 'block';
+        document.getElementById('avatarIcon').style.display = 'none';
+      }
+
       // Only update fields if user isn't typing
       const activeEl = document.activeElement;
       const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
@@ -465,6 +475,39 @@
         
         rawSchedule = data.basic_info.operating_hours || "{}";
         document.getElementById('hours_input').value = rawSchedule;
+        
+        // Documents matching
+        if(data.documents) {
+          data.documents.forEach(doc => {
+            const card = document.getElementById('card_' + doc.type);
+            const icon = document.getElementById('icon_' + doc.type);
+            const statusEl = document.getElementById('status_' + doc.type);
+            const btn = document.getElementById('btn_' + doc.type);
+            
+            if(card && icon && statusEl) {
+                card.classList.remove('missing', 'verified');
+                icon.classList.remove('verified');
+                btn.textContent = "UPDATE";
+                
+                if(doc.status === 'verified') {
+                    card.classList.add('verified');
+                    icon.classList.add('verified');
+                    statusEl.textContent = "Verified";
+                    statusEl.style.color = "var(--success)";
+                    btn.style.display = "none";
+                } else if(doc.status === 'pending') {
+                    statusEl.textContent = "Pending Review";
+                    statusEl.style.color = "var(--accent)";
+                    btn.style.display = "none";
+                } else if(doc.status === 'rejected') {
+                    card.classList.add('missing');
+                    statusEl.textContent = "Rejected - Reupload needed";
+                    statusEl.style.color = "var(--danger)";
+                    btn.style.display = "inline-block";
+                }
+            }
+          });
+        }
         
         // Bank Info
         if(data.bank) {
@@ -611,6 +654,52 @@
   function _showToast(m, t) {
     if(window.showToast) window.showToast(m, t);
     else alert(`${t.toUpperCase()}: ${m}`);
+  }
+
+  // ====== Avatar Upload Logic ======
+  const avatarContainer = document.getElementById('avatarContainer');
+  if(avatarContainer) {
+    avatarContainer.addEventListener('click', () => {
+      document.getElementById('avatarUploadInput').click();
+    });
+  }
+
+  const avatarInput = document.getElementById('avatarUploadInput');
+  if(avatarInput) {
+    avatarInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+
+      if(file.size > 5 * 1024 * 1024) {
+        _showToast("Image must be less than 5MB", "error");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const editBtn = document.querySelector('.hero-avatar-edit');
+      const oldHtml = editBtn ? editBtn.innerHTML : '';
+      if(editBtn) editBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+      try {
+        const res = await fetch("/api/provider/profile/avatar", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if(res.ok) {
+          _showToast("Avatar updated successfully!", "success");
+          fetchProfileData();
+        } else {
+          _showToast(data.detail || "Upload failed", "error");
+        }
+      } catch(err) {
+        _showToast("Network error during upload", "error");
+      } finally {
+        if(editBtn) editBtn.innerHTML = oldHtml;
+      }
+    });
   }
 </script>
 {% endblock %}

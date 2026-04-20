@@ -13,7 +13,9 @@ class PaymentMethod(str, enum.Enum):
 class Payment(Base):
     __tablename__ = "payments"
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), unique=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True) # Allowed to be null for subscriptions
+    subscription_id = Column(Integer, ForeignKey("subscriptions.id"), nullable=True)
+    provider_id = Column(Integer, ForeignKey("providers.id"), nullable=True) # Direct link for easier revenue querying
     amount = Column(Float)
     payment_method = Column(SAEnum(PaymentMethod), default=PaymentMethod.cash)
     payment_status = Column(String, default="paid")
@@ -21,3 +23,5 @@ class Payment(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     order = relationship("Order", back_populates="payment")
+    subscription = relationship("Subscription", back_populates="payment")
+    provider = relationship("Provider")

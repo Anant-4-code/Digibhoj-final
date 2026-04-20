@@ -163,14 +163,23 @@ class DeliveryTracker {
     }
 
     async calculateRoute(destination) {
-        if (!this.currentPos || !this.Route) return;
+        if (!this.Route) {
+            console.error("Directions/Route service not loaded");
+            return;
+        }
+
+        // Fallback to map center if GPS hasn't locked yet
+        const originPos = this.currentPos || {
+            lat: this.map.getCenter().lat(),
+            lng: this.map.getCenter().lng()
+        };
 
         const request = {
             origin: {
                 location: {
                     latLng: {
-                        latitude: this.currentPos.lat,
-                        longitude: this.currentPos.lng
+                        latitude: originPos.lat,
+                        longitude: originPos.lng
                     }
                 }
             },
@@ -206,12 +215,14 @@ class DeliveryTracker {
                 this.updateNavigationSidebar(leg.steps);
                 
                 const bounds = new google.maps.LatLngBounds();
-                bounds.extend(this.currentPos);
+                bounds.extend(originPos);
                 bounds.extend(destination);
                 this.map.fitBounds(bounds);
             }
         } catch (error) {
             console.error("Route calculation failed:", error);
+            // Fallback alert so the rider knows something went wrong instead of silently failing
+            alert("Could not calculate a driving route. Please try again.");
         }
     }
 

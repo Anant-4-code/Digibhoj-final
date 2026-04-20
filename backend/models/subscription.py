@@ -33,3 +33,4 @@ class Subscription(Base):
     plan = relationship("SubscriptionPlan")
     meal = relationship("Meal")
     deliveries = relationship("SubscriptionDelivery", back_populates="subscription", cascade="all, delete")
+    payment = relationship("Payment", back_populates="subscription", uselist=False, cascade="all, delete")

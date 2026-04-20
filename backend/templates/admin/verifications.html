@@ -8,6 +8,15 @@
     </div>
 </div>
 
+<!-- Doc Preview Modal -->
+<div id="docModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:white;border-radius:12px;padding:24px;width:100%;max-width:1200px;height:100%;max-height:95vh;display:flex;flex-direction:column;position:relative;">
+        <button onclick="closeDocModal()" style="position:absolute;top:16px;right:16px;border:none;background:#f1f5f9;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;">✕</button>
+        <h3 id="docModalTitle" style="margin:0 0 20px 0;font-size:1.3rem;font-weight:700;">Documents</h3>
+        <div id="docModalBody" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-right:10px;"></div>
+    </div>
+</div>
+
 <div class="card" style="margin-bottom: 24px;">
     <h2 class="page-title" style="font-size:1.4rem;margin-bottom:16px;">Mess Providers</h2>
     <div class="table-responsive">
@@ -18,12 +27,13 @@
                     <th>Owner</th>
                     <th>Location</th>
                     <th>Cuisine</th>
+                    <th>Documents</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="providers-body">
-                <tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted)">Loading providers...</td></tr>
+                <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">Loading providers...</td></tr>
             </tbody>
         </table>
     </div>
@@ -40,50 +50,119 @@
                     <th>Vehicle</th>
                     <th>License No.</th>
                     <th>Area</th>
+                    <th>Documents</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody id="delivery-body">
-                <tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">Loading delivery agents...</td></tr>
+                <tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted)">Loading delivery agents...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
+    function buildDocLinks(docs) {
+        if (!docs || Object.keys(docs).length === 0) return '<span style="color:#9ca3af;font-size:12px;">No docs uploaded</span>';
+        const labels = { aadhaar: 'Aadhaar', fssai: 'FSSAI', business_license: 'GST Cert', dl: 'Driving License', photo: 'Profile Photo' };
+        return Object.entries(docs)
+            .filter(([_, url]) => url)
+            .map(([key, url]) => `<a href="${url}" target="_blank" style="font-size:11px;font-weight:700;background:#e8f4fd;color:#1e88e5;padding:3px 8px;border-radius:6px;text-decoration:none;white-space:nowrap;">${labels[key] || key}</a>`)
+            .join(' ');
+    }
+
+    function openDocModal(type, id, stat, name, docsJson) {
+        const docs = JSON.parse(docsJson);
+        const labels = { aadhaar: 'Aadhaar Card', fssai: 'FSSAI License', business_license: 'GST Certificate', dl: 'Driving License', photo: 'Profile Photo' };
+        document.getElementById('docModalTitle').textContent = `Documents — ${name}`;
+        
+        const body = document.getElementById('docModalBody');
+        let htmlChunks = [];
+        
+        const entries = Object.entries(docs).filter(([_, url]) => url);
+        if (entries.length === 0) {
+            htmlChunks.push('<p style="color:#9ca3af;">No documents uploaded yet.</p>');
+        } else {
+            entries.forEach(([key, url]) => {
+                const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url);
+                htmlChunks.push(`
+                    <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+                        <div style="padding:10px 14px;background:#f8fafc;font-weight:700;font-size:13px;border-bottom:1px solid #e5e7eb;">${labels[key] || key}</div>
+                        <div style="flex:1;background:#e5e7eb;display:flex;align-items:center;justify-content:center;padding:10px;">
+                            ${isImage
+                                ? `<img src="${url}" style="max-width:100%;object-fit:contain;display:block;">`
+                                : `<div style="padding:40px;"><a href="${url}" target="_blank" style="color:#1e88e5;font-weight:700;font-size:1.2rem;"><i class="fa fa-external-link-alt"></i> Open Document (PDF)</a></div>`
+                            }
+                        </div>
+                    </div>`);
+            });
+        }
+        
+        // Wrap images in a grid if multiple
+        let layoutHtml = entries.length > 1 
+            ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;">${htmlChunks.join('')}</div>`
+            : `<div style="display:flex;flex:1;">${htmlChunks.join('')}</div>`;
+        
+        // Add dynamic action footer
+        let actionFooter = '';
+        if(stat === 'pending') {
+            if(type === 'provider') {
+                actionFooter = `<div style="display:flex;gap:16px;justify-content:flex-end;margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb;background:white;position:sticky;bottom:0;">
+                    <button class="btn btn-danger" style="padding:10px 24px;font-size:1.1rem" onclick="rejectProvider(${id});closeDocModal()"><i class="fa fa-xmark"></i> Reject Application</button>
+                    <button class="btn btn-primary" style="padding:10px 24px;font-size:1.1rem" onclick="verifyProvider(${id});closeDocModal()"><i class="fa fa-check"></i> Approve Provider</button>
+                </div>`;
+            } else {
+                actionFooter = `<div style="display:flex;gap:16px;justify-content:flex-end;margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb;background:white;position:sticky;bottom:0;">
+                    <button class="btn btn-primary" style="padding:10px 24px;font-size:1.1rem" onclick="verifyAgent(${id});closeDocModal()"><i class="fa fa-check"></i> Approve Delivery Agent</button>
+                </div>`;
+            }
+        } else {
+            actionFooter = `<div style="display:flex;gap:16px;justify-content:flex-end;margin-top:20px;padding-top:20px;border-top:1px solid #e5e7eb;background:white;position:sticky;bottom:0;">
+                <span class="badge ${stat === 'verified' ? 'success' : 'danger'}" style="font-size:1rem;padding:8px 16px;">Currently ${stat.charAt(0).toUpperCase() + stat.slice(1)}</span>
+            </div>`;
+        }
+
+        body.innerHTML = layoutHtml + actionFooter;
+        document.getElementById('docModal').style.display = 'flex';
+    }
+
+    function closeDocModal() { document.getElementById('docModal').style.display = 'none'; }
+
     async function loadVerifications() {
         try {
             // Load Providers
             const pRes = await fetch('/api/admin/providers');
-            if(pRes.ok) {
+            if (pRes.ok) {
                 const providers = await pRes.json();
                 const tbody = document.getElementById('providers-body');
                 tbody.innerHTML = '';
-                
                 if (providers.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--admin-text-muted)">No providers mapped.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">No providers found.</td></tr>';
                 }
-
                 providers.forEach(p => {
                     const stat = p.verification_status;
-                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' : 
-                                      stat === 'blocked' ? '<span class="badge danger">Rejected</span>' : 
-                                      '<span class="badge warning">Pending</span>';
-                    
-                    const actions = stat === 'pending' 
-                        ? `<button class="btn btn-sm btn-primary" onclick="verifyProvider(${p.id})"><i class="fa fa-check"></i> Approve</button>
-                           <button class="btn btn-sm btn-danger" onclick="rejectProvider(${p.id})"><i class="fa fa-xmark"></i> Reject</button>`
+                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' :
+                                       stat === 'blocked'  ? '<span class="badge danger">Rejected</span>' :
+                                                             '<span class="badge warning">Pending</span>';
+                    const actions = stat === 'pending'
+                        ? `<button class="btn btn-sm btn-primary" onclick="verifyProvider(${p.id})"><i class="fa fa-check"></i></button>
+                           <button class="btn btn-sm btn-danger" onclick="rejectProvider(${p.id})"><i class="fa fa-xmark"></i></button>`
                         : `<button class="btn btn-sm btn-outline" disabled>Action Taken</button>`;
-
+                    const docsJson = JSON.stringify(p.docs || {}).replace(/"/g, '&quot;');
+                    const docCount = Object.values(p.docs || {}).filter(v => v).length;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${p.mess_name}</strong></td>
                         <td>${p.owner_name}</td>
-                        <td>${p.location}</td>
-                        <td>${p.cuisine_type}</td>
+                        <td>${p.location || '—'}</td>
+                        <td>${p.cuisine_type || '—'}</td>
+                        <td>
+                            ${buildDocLinks(p.docs)}
+                            ${docCount > 0 ? `<br><button class="btn btn-sm btn-outline" style="margin-top:4px;font-size:10px;background:#f3f4f6" onclick="openDocModal('provider', ${p.id}, '${stat}', '${p.mess_name}', '${docsJson}')">👁 Full Screen Preview</button>` : ''}
+                        </td>
                         <td>${statusBadge}</td>
-                        <td style="display:flex;gap:8px;">${actions} <button class="btn btn-icon btn-outline" title="Inspect Documents"><i class="fa fa-file-contract"></i></button></td>
+                        <td style="display:flex;gap:8px;flex-wrap:wrap;">${actions}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -91,33 +170,40 @@
 
             // Load Delivery
             const dRes = await fetch('/api/admin/delivery');
-            if(dRes.ok) {
+            if (dRes.ok) {
                 const agents = await dRes.json();
                 const tbody = document.getElementById('delivery-body');
                 tbody.innerHTML = '';
-
                 if (agents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--admin-text-muted)">No delivery agents mapped.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--admin-text-muted)">No delivery agents found.</td></tr>';
                 }
-
                 agents.forEach(a => {
                     const stat = a.verification_status;
-                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' : 
-                                      '<span class="badge warning">Pending</span>';
-                    
-                    const actions = stat === 'pending' 
-                        ? `<button class="btn btn-sm btn-primary" onclick="verifyAgent(${a.id})"><i class="fa fa-check"></i> Approve</button>`
+                    const statusBadge = stat === 'verified' ? '<span class="badge success">Verified</span>' :
+                                                              '<span class="badge warning">Pending</span>';
+                    const actions = stat === 'pending'
+                        ? `<button class="btn btn-sm btn-primary" onclick="verifyAgent(${a.id})"><i class="fa fa-check"></i></button>`
                         : `<button class="btn btn-sm btn-outline" disabled>Verified</button>`;
-
+                    // Build KYC doc map
+                    const agentDocs = {};
+                    if (a.aadhaar_url) agentDocs.aadhaar = a.aadhaar_url;
+                    if (a.dl_url) agentDocs.dl = a.dl_url;
+                    if (a.profile_photo_url) agentDocs.photo = a.profile_photo_url;
+                    const docsJson = JSON.stringify(agentDocs).replace(/"/g, '&quot;');
+                    const docCount = Object.keys(agentDocs).length;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td><strong>${a.name}</strong></td>
-                        <td>${a.phone}</td>
-                        <td><span class="badge" style="background:rgba(30,136,229,0.1); color:#1e88e5">${a.vehicle_type}</span></td>
-                        <td>${a.license_number}</td>
-                        <td>${a.service_area}</td>
+                        <td>${a.phone || '—'}</td>
+                        <td><span class="badge" style="background:rgba(30,136,229,0.1);color:#1e88e5">${a.vehicle_type}</span></td>
+                        <td>${a.license_number || '—'}</td>
+                        <td>${a.service_area || '—'}</td>
+                        <td>
+                            ${buildDocLinks(agentDocs)}
+                            ${docCount > 0 ? `<br><button class="btn btn-sm btn-outline" style="margin-top:4px;font-size:10px;background:#f3f4f6" onclick="openDocModal('agent', ${a.id}, '${stat}', '${a.name}', '${docsJson}')">👁 Full Screen Preview</button>` : '<span style="color:#9ca3af;font-size:12px;">No docs</span>'}
+                        </td>
                         <td>${statusBadge}</td>
-                        <td style="display:flex;gap:8px;">${actions} <button class="btn btn-icon btn-outline" title="Inspect License"><i class="fa fa-id-badge"></i></button></td>
+                        <td style="display:flex;gap:8px;flex-wrap:wrap;">${actions}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -154,3 +240,4 @@
     loadVerifications();
 </script>
 {% endblock %}
+

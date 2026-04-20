@@ -17,9 +17,9 @@ def overview(db: Session = Depends(get_db)):
     agents_count = db.query(DeliveryAgent).count()
     orders_count = db.query(Order).count()
     
-    # Sum revenue using SQL-side aggregate
-    revenue = db.query(func.sum(Order.total_price)).filter(
-        Order.order_status.in_(["delivered", "completed"])
+    # Sum revenue using SQL-side aggregate over Payments
+    revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.payment_status == "paid"
     ).scalar() or 0.0
     
     pending_providers = db.query(Provider).filter(
@@ -77,16 +77,21 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
 @router.get("/providers")
 def list_providers(db: Session = Depends(get_db)):
     from sqlalchemy.orm import joinedload
+    from backend.models import ProviderDocument
     providers = db.query(Provider).options(joinedload(Provider.user)).all()
     result = []
     for p in providers:
         # Defensive check for broken user relationships during transition
         if not p.user: continue
+        # Fetch uploaded documents for this provider
+        docs = db.query(ProviderDocument).filter(ProviderDocument.provider_id == p.id).all()
+        docs_map = {d.document_type: d.file_url for d in docs}
         result.append({
             "id": p.id, "mess_name": p.mess_name, "owner_name": p.user.name,
             "location": p.location, "cuisine_type": p.cuisine_type,
             "verification_status": p.verification_status.value,
-            "rating": p.rating, "created_at": str(p.created_at)
+            "rating": p.rating, "created_at": str(p.created_at),
+            "docs": docs_map  # e.g. {"aadhaar": "/assets/uploads/...", "fssai": "..."}
         })
     return result
 
@@ -112,11 +117,21 @@ def reject_provider(provider_id: int, db: Session = Depends(get_db)):
 def list_delivery_agents(db: Session = Depends(get_db)):
     from sqlalchemy.orm import joinedload
     agents = db.query(DeliveryAgent).options(joinedload(DeliveryAgent.user)).all()
-    return [{"id": a.id, "name": a.user.name, "phone": a.phone,
-             "vehicle_type": a.vehicle_type, "license_number": a.license_number,
-             "service_area": a.service_area,
-             "verification_status": a.verification_status.value,
-             "availability": a.availability.value} for a in agents]
+    result = []
+    for a in agents:
+        if not a.user: continue
+        result.append({
+            "id": a.id, "name": a.user.name, "phone": a.phone,
+            "vehicle_type": a.vehicle_type, "license_number": a.license_number,
+            "service_area": a.service_area,
+            "verification_status": a.verification_status.value,
+            "availability": a.availability.value,
+            # KYC document URLs so admin can inspect before verifying
+            "aadhaar_url": a.aadhaar_url,
+            "dl_url": a.dl_url,
+            "profile_photo_url": a.profile_photo_url
+        })
+    return result
 
 @router.put("/delivery/verify/{agent_id}")
 def verify_agent(agent_id: int, db: Session = Depends(get_db)):
@@ -192,28 +207,27 @@ def admin_analytics(db: Session = Depends(get_db)):
     
     # Get daily counts and revenue using group-by
     # Formatting date depends on SQL flavor; SQLite uses strftime
+    # Get daily counts for orders using group-by
     daily_stats = db.query(
         func.date(Order.created_at).label('day'),
-        func.count(Order.id).label('count'),
-        func.sum(Order.total_price).label('revenue')
+        func.count(Order.id).label('count')
     ).group_by(func.date(Order.created_at)).all()
     
     daily_data = {}
-    for day, count, revenue in daily_stats:
-        # Filter revenue for only completed orders in Python (or more complex SQL)
-        # For simplicity in this SQLite context:
-        completed_rev = db.query(func.sum(Order.total_price)).filter(
-            func.date(Order.created_at) == day,
-            Order.order_status.in_(["delivered", "completed"])
+    for day, count in daily_stats:
+        # Sum payments for the given day
+        revenue_today = db.query(func.sum(Payment.amount)).filter(
+            func.date(Payment.created_at) == day,
+            Payment.payment_status == "paid"
         ).scalar() or 0.0
         
         daily_data[str(day)] = {
             "count": count,
-            "revenue": float(completed_rev)
+            "revenue": float(revenue_today)
         }
     
-    total_rev = db.query(func.sum(Order.total_price)).filter(
-        Order.order_status.in_(["delivered", "completed"])
+    total_rev = db.query(func.sum(Payment.amount)).filter(
+        Payment.payment_status == "paid"
     ).scalar() or 0.0
 
     return {

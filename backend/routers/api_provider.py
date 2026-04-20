@@ -20,14 +20,23 @@ def provider_dashboard(provider_id: int, db: Session = Depends(get_db)):
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found")
     
-    from datetime import date
+    from datetime import datetime, timedelta
+    cutoff = datetime.now() - timedelta(hours=24)
     today_orders = db.query(Order).filter(
         Order.provider_id == provider_id,
         Order.order_status != OrderStatus.cancelled
     ).all()
-    today_count = len([o for o in today_orders if o.created_at and o.created_at.date() == date.today()])
+    today_count = len([o for o in today_orders if o.created_at and o.created_at >= cutoff])
     pending = len([o for o in today_orders if o.order_status.value in ["created", "confirmed", "preparing"]])
-    total_revenue = sum(o.total_price for o in today_orders if o.order_status.value in ["delivered", "completed"])
+    
+    # Calculate total revenue using Payment table
+    from sqlalchemy import func
+    from backend.models.payment import Payment
+    total_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == provider_id,
+        Payment.payment_status == "paid"
+    ).scalar() or 0.0
+    
     top_meal = None
     if provider.meals:
         top_meal = sorted(provider.meals, key=lambda m: len(m.order_items), reverse=True)[0].name
@@ -189,17 +198,209 @@ def provider_analytics(provider_id: int, db: Session = Depends(get_db)):
     meals_sold = {}
     for o in orders:
         for item in o.items:
-            name = item.meal.name
+            name = item.meal.name if item.meal else "Unknown"
             if name not in meals_sold:
                 meals_sold[name] = 0
             meals_sold[name] += item.quantity
     
     reviews = db.query(Review).filter(Review.provider_id == provider_id).all()
     avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else 0
+    from sqlalchemy import func
+    from backend.models.payment import Payment
+    total_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == provider_id,
+        Payment.payment_status == "paid"
+    ).scalar() or 0.0
     
     return {"daily_data": daily, "meals_sold": meals_sold,
             "total_orders": len(orders),
-            "total_revenue": sum(o.total_price for o in orders), "avg_rating": avg_rating}
+            "total_revenue": total_revenue, "avg_rating": avg_rating}
+
+@router.get("/analytics/data")
+def provider_analytics_data(request: Request, range: str = "week", db: Session = Depends(get_db)):
+    """Real-time analytics endpoint used by the analytics dashboard page."""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    from backend.models.payment import Payment
+
+    user = get_user(request, db)
+    if not user or not user.provider:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    provider = user.provider
+    provider_id = provider.id
+
+    # ── Date range setup ──────────────────────────────────────────
+    now = datetime.now()
+    if range == "today":
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        prev_start = start - timedelta(days=1)
+        prev_end = start
+        chart_days = 1
+        chart_label_fmt = lambda d: d.strftime("%H:00")
+    elif range == "month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        prev_start = (start - timedelta(days=1)).replace(day=1)
+        prev_end = start
+        chart_days = 30
+        chart_label_fmt = lambda d: d.strftime("%d %b")
+    elif range == "all":
+        start = datetime(2000, 1, 1)
+        prev_start = start
+        prev_end = start
+        chart_days = 12
+        chart_label_fmt = lambda d: d.strftime("%b %Y")
+    else:  # week (default)
+        start = now - timedelta(days=7)
+        prev_start = start - timedelta(days=7)
+        prev_end = start
+        chart_days = 7
+        chart_label_fmt = lambda d: d.strftime("%a")
+
+    # ── Orders in period ─────────────────────────────────────────
+    all_orders = db.query(Order).filter(Order.provider_id == provider_id).all()
+    curr_orders = [o for o in all_orders if o.created_at and o.created_at >= start]
+    prev_orders = [o for o in all_orders if o.created_at and prev_start <= o.created_at < prev_end]
+
+    curr_revenue_q = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == provider_id,
+        Payment.payment_status == "paid",
+        Payment.created_at >= start
+    ).scalar() or 0.0
+    prev_revenue_q = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == provider_id,
+        Payment.payment_status == "paid",
+        Payment.created_at >= prev_start,
+        Payment.created_at < prev_end
+    ).scalar() or 0.0
+
+    rev_growth  = round(((curr_revenue_q - prev_revenue_q) / prev_revenue_q * 100) if prev_revenue_q else 0, 1)
+    order_growth = round(((len(curr_orders) - len(prev_orders)) / len(prev_orders) * 100) if prev_orders else 0, 1)
+
+    # ── Revenue breakdown ─────────────────────────────────────────
+    subs_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == provider_id,
+        Payment.payment_status == "paid",
+        Payment.payment_method == "Subscription",
+        Payment.created_at >= start
+    ).scalar() or 0.0
+    one_time_revenue = curr_revenue_q - subs_revenue
+
+    # ── Subscriptions ─────────────────────────────────────────────
+    from backend.models import SubscriptionStatus
+    active_subs = db.query(Subscription).filter(
+        Subscription.provider_id == provider_id,
+        Subscription.status == SubscriptionStatus.active
+    ).count()
+    new_subs = db.query(Subscription).filter(
+        Subscription.provider_id == provider_id,
+        Subscription.created_at >= start
+    ).count()
+    cancelled_subs = db.query(Subscription).filter(
+        Subscription.provider_id == provider_id,
+        Subscription.status == SubscriptionStatus.cancelled,
+        Subscription.updated_at >= start if hasattr(Subscription, 'updated_at') else True
+    ).count()
+
+    # ── Ratings ───────────────────────────────────────────────────
+    reviews = db.query(Review).filter(Review.provider_id == provider_id).all()
+    avg_rating = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else 0.0
+
+    # ── Order status distribution ─────────────────────────────────
+    completed = len([o for o in curr_orders if o.order_status == OrderStatus.delivered])
+    pending   = len([o for o in curr_orders if o.order_status.value in ("created", "confirmed", "preparing")])
+    cancelled = len([o for o in curr_orders if o.order_status == OrderStatus.cancelled])
+
+    # ── Top items ─────────────────────────────────────────────────
+    meal_counts = {}
+    for o in curr_orders:
+        for item in o.items:
+            name = item.meal.name if item.meal else "Unknown"
+            meal_counts[name] = meal_counts.get(name, 0) + item.quantity
+    top_items = [{"name": k, "orders": v} for k, v in
+                 sorted(meal_counts.items(), key=lambda x: x[1], reverse=True)[:5]]
+
+    # ── Peak time ────────────────────────────────────────────────
+    hour_counts = {}
+    for o in curr_orders:
+        if o.created_at:
+            h = o.created_at.hour
+            hour_counts[h] = hour_counts.get(h, 0) + 1
+    if hour_counts:
+        peak_h = max(hour_counts, key=hour_counts.get)
+        peak_str = f"{peak_h}:00 – {peak_h+1}:00"
+    else:
+        peak_str = "No data yet"
+
+    # ── Customer retention ────────────────────────────────────────
+    all_cust = set(o.customer_id for o in all_orders)
+    curr_cust = set(o.customer_id for o in curr_orders)
+    returning = all_cust & curr_cust
+    retention_rate = round(len(returning) / len(curr_cust) * 100, 1) if curr_cust else 0.0
+
+    # ── Chart data (daily earnings) ───────────────────────────────
+    chart_labels, chart_data = [], []
+    for i in range(chart_days - 1, -1, -1):
+        day = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day + timedelta(days=1)
+        day_rev = db.query(func.sum(Payment.amount)).filter(
+            Payment.provider_id == provider_id,
+            Payment.payment_status == "paid",
+            Payment.created_at >= day,
+            Payment.created_at < day_end
+        ).scalar() or 0.0
+        chart_labels.append(chart_label_fmt(day))
+        chart_data.append(round(day_rev, 2))
+
+    # ── Smart insights ─────────────────────────────────────────────
+    insights = []
+    if curr_revenue_q == 0:
+        insights.append("No revenue recorded in this period. Check if orders are being placed and payments confirmed.")
+    if rev_growth > 10:
+        insights.append(f"Revenue is up {rev_growth}% vs the previous period. Great momentum!")
+    if active_subs > 0:
+        insights.append(f"You have {active_subs} active subscription(s) providing steady recurring income.")
+    if top_items:
+        insights.append(f"Your best-selling item is '{top_items[0]['name']}' with {top_items[0]['orders']} orders.")
+    if retention_rate < 30 and len(curr_cust) > 3:
+        insights.append("Customer retention is low. Consider offering loyalty discounts to existing customers.")
+
+    return {
+        "overview": {
+            "earnings": curr_revenue_q,
+            "earnings_growth": rev_growth,
+            "orders": len(curr_orders),
+            "orders_growth": order_growth,
+            "rating": avg_rating,
+            "reviews_count": len(reviews),
+        },
+        "revenue_breakdown": {
+            "subscriptions": subs_revenue,
+            "one_time": one_time_revenue,
+        },
+        "subscriptions": {
+            "active": active_subs,
+            "new": new_subs,
+            "cancelled": cancelled_subs,
+            "growth": new_subs - cancelled_subs,
+        },
+        "order_overview": {
+            "completed": completed,
+            "pending": pending,
+            "cancelled": cancelled,
+        },
+        "customer_insights": {
+            "new_count": len(curr_cust) - len(returning),
+            "retention_rate": retention_rate,
+        },
+        "top_items": top_items,
+        "peak_time": peak_str,
+        "insights": insights,
+        "chart": {
+            "labels": chart_labels,
+            "data": chart_data,
+        },
+    }
 
 # ─── Provider Plan Management ────────────────────────────────────
 
@@ -326,16 +527,30 @@ def provider_analytics_data(request: Request, range: str = "week", db: Session =
     all_orders_count = db.query(Order).filter(Order.provider_id == p_id).count() # For context if needed
     
     # 1.1 Revenue & Breakdowns
-    curr_revenue = sum(o.total_price for o in curr_orders if o.order_status.value in ["delivered", "completed"])
-    prev_revenue = sum(o.total_price for o in prev_orders if o.order_status.value in ["delivered", "completed"])
+    # 1.1 Revenue & Breakdowns using genuine Payment records
+    from sqlalchemy import func
+    curr_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == p_id,
+        Payment.payment_status == "paid",
+        Payment.created_at >= start_date
+    ).scalar() or 0.0
     
-    # Simple split estimate for now (Orders vs Subscriptions if tagged)
-    subs_revenue = sum(o.total_price for o in curr_orders if 'subscription' in (o.payment_method or '').lower()) 
+    prev_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == p_id,
+        Payment.payment_status == "paid",
+        Payment.created_at >= prev_start,
+        Payment.created_at < start_date
+    ).scalar() or 0.0
+    
+    # Accurate breakdown: Subscriptions have a subscription_id, individual orders have only order_id
+    subs_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == p_id,
+        Payment.payment_status == "paid",
+        Payment.created_at >= start_date,
+        Payment.subscription_id.isnot(None)
+    ).scalar() or 0.0
+    
     one_time_revenue = curr_revenue - subs_revenue
-    if subs_revenue == 0 and curr_revenue > 0:
-        # Fallback simulation if no tags exist
-        subs_revenue = curr_revenue * 0.45
-        one_time_revenue = curr_revenue * 0.55
 
     # 2. Subscriptions Data
     subs = db.query(Subscription).filter(Subscription.provider_id == p_id).all()
@@ -457,6 +672,32 @@ import shutil
 import uuid
 from fastapi import UploadFile, File, Form
 
+@router.post("/profile/avatar")
+async def update_provider_avatar(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    user = get_user(request, db)
+    if not user or not user.provider:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    import shutil
+    import uuid
+    from pathlib import Path
+    
+    upload_dir = Path("public/assets/uploads/provider_avatars")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    safe_filename = f"{uuid.uuid4()}.{file_ext}"
+    file_path = upload_dir / safe_filename
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    image_url = f"/assets/uploads/provider_avatars/{safe_filename}"
+    user.provider.image_url = image_url
+    db.commit()
+    
+    return {"message": "Avatar updated successfully", "image_url": image_url}
+
 @router.get("/profile/data")
 def get_provider_profile(request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
@@ -497,7 +738,8 @@ def get_provider_profile(request: Request, db: Session = Depends(get_db)):
             "operating_hours": provider.operating_hours,
             "location": provider.location,
             "latitude": provider.latitude,
-            "longitude": provider.longitude
+            "longitude": provider.longitude,
+            "image_url": provider.image_url
         },
         "settings": {
             "vacation_mode": provider.vacation_mode,
@@ -592,8 +834,11 @@ def update_provider_bank(data: BankSchema, request: Request, db: Session = Depen
     db.commit()
     return {"message": "Bank details updated"}
 
+UPLOAD_DIR = Path("public/assets/uploads/provider_docs")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 @router.post("/profile/document")
-def upload_provider_document(
+async def upload_provider_document(
     request: Request,
     document_type: str = Form(...),
     file: UploadFile = File(...),
@@ -603,16 +848,25 @@ def upload_provider_document(
     if not user or not user.provider:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
-    filename = f"{uuid.uuid4()}_{file.filename}"
-    upload_dir = Path("public/assets/uploads")
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    file_path = upload_dir / filename
+    p = user.provider
+    
+    # Check document type validity
+    from backend.models.provider import DocumentType, ProviderDocument, DocumentStatus
+    if document_type not in [e.value for e in DocumentType]:
+        raise HTTPException(status_code=400, detail="Invalid document type")
+    
+    # Save the file
+    ext = file.filename.split('.')[-1] if '.' in file.filename else 'img'
+    file_id = str(uuid.uuid4())
+    filename = f"{p.id}_{document_type}_{file_id}.{ext}"
+    file_path = UPLOAD_DIR / filename
+    
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+        
+    file_url = f"/assets/uploads/provider_docs/{filename}"
     
-    file_url = f"/assets/uploads/{filename}"
-    
-    p = user.provider
+    # Find existing and update or create new
     doc = db.query(ProviderDocument).filter(
         ProviderDocument.provider_id == p.id,
         ProviderDocument.document_type == document_type
@@ -623,14 +877,14 @@ def upload_provider_document(
         doc.status = DocumentStatus.pending
         doc.admin_note = None
     else:
-        new_doc = ProviderDocument(
+        doc = ProviderDocument(
             provider_id=p.id,
             document_type=DocumentType(document_type),
             file_url=file_url,
             status=DocumentStatus.pending
         )
-        db.add(new_doc)
-    
+        db.add(doc)
+        
     db.commit()
     return {"message": "Document uploaded successfully", "url": file_url}
 

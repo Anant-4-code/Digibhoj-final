@@ -88,24 +88,32 @@ def mark_delivered(order_id: int, otp: str = Query(None), db: Session = Depends(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    # OTP Verification (Strict)
-    if not order.delivery_otp:
-         # Log this anomaly
-         print(f"[WARNING] Order {order_id} is in status {order.order_status} but has NO delivery_otp! Generating one now.")
-         import random
-         order.delivery_otp = str(random.randint(1000, 9999))
-         db.commit()
-         raise HTTPException(status_code=400, detail=f"OTP was missing for this order but has now been generated. Please refresh customer dashboard and provide OTP: {order.delivery_otp}")
-
-    if str(order.delivery_otp) != str(otp):
-        raise HTTPException(status_code=400, detail="Invalid OTP for delivery confirmation")
+    # Subscription orders (payment_method == "Subscription") don't require OTP
+    is_subscription_order = (order.payment_method or "").lower() == "subscription"
+    
+    if is_subscription_order:
+        # Bypass OTP for prepaid subscription deliveries
+        print(f"[INFO] Skipping OTP for subscription order {order_id}")
+    else:
+        # Standard order: enforce OTP
+        if not order.delivery_otp:
+            # OTP missing — generate one and ask customer to share it
+            import random as rand
+            order.delivery_otp = str(rand.randint(1000, 9999))
+            db.commit()
+            raise HTTPException(
+                status_code=400,
+                detail=f"OTP not yet generated. Please go back and press 'Mark Out for Delivery' first to send OTP to customer."
+            )
+        if str(order.delivery_otp) != str(otp):
+            raise HTTPException(status_code=400, detail="Invalid OTP. Please check with the customer and try again.")
     
     order.order_status = OrderStatus.delivered
     if order.assignment:
-        # Calculate Earnings dynamically
+        # Calculate Earnings dynamically — guaranteed minimum even for ₹0 orders
         base_fee = 15.0
-        distance_fee = 10.0 # Fixed mock distance rate
-        bonus = float(order.total_price) * 0.05 # 5% bonus for order value
+        distance_fee = 10.0
+        bonus = float(order.total_price) * 0.05  # 5% bonus on order value
         total = base_fee + distance_fee + bonus
         
         order.assignment.status = DeliveryAssignmentStatus.completed
@@ -117,7 +125,8 @@ def mark_delivered(order_id: int, otp: str = Query(None), db: Session = Depends(
         if order.assignment.agent:
             order.assignment.agent.total_earnings += total
     db.commit()
-    return {"message": "Marked as delivered"}
+    return {"message": "Marked as delivered", "earnings": total if order.assignment else 0}
+
 
 from datetime import datetime, timedelta
 
@@ -191,7 +200,7 @@ def update_location(agent_id: int, data: LocationUpdate, db: Session = Depends(g
     db.commit()
     return {"message": "Location updated"}
 
-UPLOAD_DIR = "public/uploads/delivery_docs"
+UPLOAD_DIR = "public/assets/uploads/delivery_docs"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/profile/upload")

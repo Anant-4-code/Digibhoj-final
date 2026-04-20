@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from backend.database import get_db
 from backend.dependencies import get_current_user_from_request
 from backend.models import (Provider, Meal, Order, Customer, CartItem, DeliveryAgent,
@@ -354,11 +355,17 @@ def provider_dashboard(request: Request, db: Session = Depends(get_db)):
     if not user or not user.provider:
         return RedirectResponse("/login")
     p = user.provider
-    from datetime import date
+    from datetime import datetime, timedelta
     orders = db.query(Order).filter(Order.provider_id == p.id).all()
-    today_orders = [o for o in orders if o.created_at and o.created_at.date() == date.today()]
+    cutoff = datetime.now() - timedelta(hours=24)
+    today_orders = [o for o in orders if o.created_at and o.created_at >= cutoff]
     pending = [o for o in orders if o.order_status.value in ["created", "confirmed", "preparing"]]
-    total_revenue = sum(o.total_price for o in orders if o.order_status.value in ["delivered", "completed"])
+    from sqlalchemy import func
+    total_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == p.id,
+        Payment.payment_status == "paid"
+    ).scalar() or 0.0
+    
     top_meal = sorted(p.meals, key=lambda m: len(m.order_items), reverse=True)[0].name if p.meals else "N/A"
     recent_orders = sorted(orders, key=lambda o: o.created_at, reverse=True)[:5]
     return templates.TemplateResponse("provider/dashboard.html", {
@@ -387,12 +394,25 @@ async def add_meal_action(request: Request, db: Session = Depends(get_db)):
     from backend.models import MealCategory
     cat_map = {"Breakfast": MealCategory.breakfast, "Lunch": MealCategory.lunch,
                "Dinner": MealCategory.dinner, "Snacks": MealCategory.snacks}
+    meal_image = form.get("meal_image")
+    image_url = form.get("image_url") or "/assets/images/meal-default.jpg"
+    
+    if meal_image and getattr(meal_image, "filename", None):
+        import shutil, uuid
+        from pathlib import Path
+        upload_dir = Path("public/assets/uploads/meals")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        file_path = upload_dir / f"{uuid.uuid4()}_{meal_image.filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(meal_image.file, buffer)
+        image_url = f"/assets/uploads/meals/{file_path.name}"
+
     meal = Meal(provider_id=user.provider.id, name=form.get("name"),
                 description=form.get("description", ""),
                 category=cat_map.get(form.get("category", "Lunch"), MealCategory.lunch),
                 price=float(form.get("price", 0)),
                 is_veg=form.get("is_veg") == "true",
-                image_url=form.get("image_url") or "/assets/images/meal-default.jpg")
+                image_url=image_url)
     db.add(meal)
     db.commit()
     return RedirectResponse("/provider/menu?success=Meal added successfully! 🎉", status_code=302)
@@ -420,7 +440,20 @@ async def update_meal_action(meal_id: int, request: Request, db: Session = Depen
         meal.name = form.get("name")
         meal.price = float(form.get("price"))
         meal.description = form.get("description")
-        meal.image_url = form.get("image_url")
+        
+        meal_image = form.get("meal_image")
+        if meal_image and getattr(meal_image, "filename", None):
+            import shutil, uuid
+            from pathlib import Path
+            upload_dir = Path("public/assets/uploads/meals")
+            upload_dir.mkdir(parents=True, exist_ok=True)
+            file_path = upload_dir / f"{uuid.uuid4()}_{meal_image.filename}"
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(meal_image.file, buffer)
+            meal.image_url = f"/assets/uploads/meals/{file_path.name}"
+        elif form.get("image_url"):
+            meal.image_url = form.get("image_url")
+            
         meal.category = MealCategory(form.get("category"))
         meal.is_veg = form.get("is_veg") == "true"
         db.commit()
@@ -551,7 +584,11 @@ def provider_analytics(request: Request, db: Session = Depends(get_db)):
     p = user.provider
     orders = db.query(Order).filter(Order.provider_id == p.id,
                                      Order.order_status != OrderStatus.cancelled).all()
-    total_revenue = sum(o.total_price for o in orders if o.order_status.value in ["delivered", "completed"])
+    from sqlalchemy import func
+    total_revenue = db.query(func.sum(Payment.amount)).filter(
+        Payment.provider_id == p.id,
+        Payment.payment_status == "paid"
+    ).scalar() or 0.0
     return templates.TemplateResponse("provider/analytics.html", {
         "request": request, "user": user, "provider": p,
         "total_orders": len(orders), "total_revenue": total_revenue,
@@ -599,6 +636,21 @@ def delivery_dashboard(request: Request, db: Session = Depends(get_db)):
         "total_earnings": agent.total_earnings
     })
 
+@router.get("/delivery/history", response_class=HTMLResponse)
+def delivery_history(request: Request, db: Session = Depends(get_db)):
+    user = get_user(request, db)
+    if not user or not user.delivery_agent:
+        return RedirectResponse("/login")
+    agent = user.delivery_agent
+    assignments = db.query(DeliveryAssignment).filter(
+        DeliveryAssignment.agent_id == agent.id,
+        DeliveryAssignment.status == "completed"
+    ).order_by(DeliveryAssignment.id.desc()).all()
+    return templates.TemplateResponse("delivery/history.html", {
+        "request": request, "user": user, "agent": agent,
+        "completed_tasks": assignments
+    })
+
 @router.post("/delivery/action/accept/{assignment_id}")
 def accept_task_action(assignment_id: int, request: Request, db: Session = Depends(get_db)):
     user = get_user(request, db)
@@ -634,7 +686,21 @@ def deliver_task_action(assignment_id: int, request: Request, db: Session = Depe
     if assignment:
         assignment.status = DeliveryAssignmentStatus.completed
         assignment.order.order_status = OrderStatus.delivered
-        user.delivery_agent.total_earnings += (assignment.order.total_price * 0.1)
+        
+        # Standardized Earnings Logic
+        base_fee = 15.0
+        distance_fee = 10.0 # Fixed mock distance rate
+        bonus = float(assignment.order.total_price) * 0.05
+        
+        # Ensure a minimum earning for membership orders (total_price might be 0)
+        total = base_fee + distance_fee + bonus
+        
+        assignment.base_fee = base_fee
+        assignment.distance_fee = distance_fee
+        assignment.bonus = bonus
+        assignment.total_amount = total
+        
+        user.delivery_agent.total_earnings += total
         db.commit()
     return RedirectResponse("/delivery/dashboard", status_code=302)
 
@@ -698,8 +764,8 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "total_providers": db.query(Provider).count(),
         "total_delivery_agents": db.query(DeliveryAgent).count(),
         "total_orders": db.query(Order).count(),
-        "total_revenue": sum(o.total_price for o in db.query(Order).filter(
-            Order.order_status.in_(["delivered", "completed"])).all()),
+        "total_revenue": db.query(func.sum(Payment.amount)).filter(
+            Payment.payment_status == "paid").scalar() or 0.0,
         "pending_providers": db.query(Provider).filter(
             Provider.verification_status == VerificationStatus.pending).count(),
         "pending_agents": db.query(DeliveryAgent).filter(

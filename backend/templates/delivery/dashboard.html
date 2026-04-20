@@ -77,6 +77,9 @@
     <a href="/delivery/dashboard" class="sidebar-item active">
       <i class="fa fa-motorcycle"></i> Active Tasks
     </a>
+    <a href="/delivery/history" class="sidebar-item">
+      <i class="fa-solid fa-clock-rotate-left"></i> Delivery History
+    </a>
 
     <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
     <a href="/delivery/profile" class="sidebar-item">
@@ -302,8 +305,7 @@
 
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
               <div style="font-size:var(--sm);color:var(--text-muted)">Est. Earnings</div>
-              <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ (task.order.total_price * 0.1)|int
-                }}</div>
+              <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ [25, (task.order.total_price * 0.05)|int]|sum }}</div>
             </div>
             <div>
               {% if task.status == 'assigned' or task.status.value == 'assigned' %}
@@ -332,23 +334,24 @@
                 onclick="updateCurrentTaskStatus('picked_up', '{{ task.order_id }}')">
                 <i class="fa fa-box-open"></i> Mark Picked Up
               </button>
-              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
-                  class="fa fa-location-arrow"></i> Navigate</button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="openNavigation('{{ task.pickup_location }}')"><i
+                  class="fa fa-location-arrow"></i> Navigate to Pick-up</button>
               {% elif task.status == 'picked_up' or task.status.value == 'picked_up' %}
               <button class="btn btn-primary btn-full magnetic" style="background:#1565c0;color:white;margin-bottom:8px"
                 onclick="updateCurrentTaskStatus('out_for_delivery', '{{ task.order_id }}')">
                 <i class="fa fa-truck-fast"></i> Mark Out for Delivery
               </button>
-              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
-                  class="fa fa-location-arrow"></i> Navigate</button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="openNavigation('{{ task.drop_location }}', '{{ task.pickup_location }}')"><i
+                  class="fa fa-location-arrow"></i> Navigate to Drop-off</button>
               {% elif task.status == 'out_for_delivery' or task.status.value == 'out_for_delivery' %}
               <button class="btn btn-success btn-full magnetic"
                 style="background:var(--green);color:white;margin-bottom:8px"
-                onclick="openOTPModal('{{ task.order_id }}')">
+                onclick="handleCompleteDropoff('{{ task.order_id }}', '{{ task.order.payment_method if task.order and task.order.payment_method else '' }}')"
+              >
                 <i class="fa fa-check-circle"></i> Complete Drop-off
               </button>
-              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
-                  class="fa fa-location-arrow"></i> Navigate</button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="openNavigation('{{ task.drop_location }}', '{{ task.pickup_location }}')"><i
+                  class="fa fa-location-arrow"></i> Navigate to Drop-off</button>
               {% else %}
               <div
                 style="text-align:center;padding:10px;background:var(--bg-color);border-radius:var(--radius-md);font-size:12px;color:var(--text-muted)">
@@ -431,30 +434,59 @@
     fetch(url, { method: 'PUT' })
       .then(r => {
         if (r.ok) {
-          showToast(`Delivery status updated to ${status.replace(/_/g, ' ')}! 🚚`, 'success');
-          setTimeout(() => window.location.reload(), 1000);
+          // Immediately redirect without risking missing variables
+          window.location.href = '/delivery/dashboard';
         } else {
           r.json().then(data => {
             console.error("Status update failed:", data);
-            showToast(data.detail || "Update failed", "error");
+            alert(data.detail || "Update failed");
           });
         }
       })
       .catch(err => {
         console.error("Network error updating status:", err);
-        showToast("Network error. Please try again.", "error");
+        alert("Network error. Please try again.");
       });
+  }
+
+  // Smart drop-off handler: skips OTP for subscription orders
+  function handleCompleteDropoff(orderId, paymentMethod) {
+    const isSubscription = paymentMethod && paymentMethod.toLowerCase() === 'subscription';
+    if (isSubscription) {
+      if (!confirm("Complete this subscription delivery drop-off?")) return;
+      // No OTP needed — call API directly
+      fetch(`/api/delivery/delivered/${orderId}`, { method: 'PUT' })
+        .then(r => {
+          if (r.ok) {
+            window.location.href = '/delivery/dashboard';
+          } else {
+            r.json().then(d => alert(d.detail || "Failed to complete delivery"));
+          }
+        })
+        .catch(() => alert("Network error. Please try again."));
+    } else {
+      openOTPModal(orderId);
+    }
   }
 
   function openOTPModal(orderId) {
     console.log("Opening OTP Modal for Order:", orderId);
     currentOrderIdForDelivery = orderId;
-    document.getElementById('otp-modal').style.display = 'flex';
-    document.getElementById('otp-1').focus();
+    const modal = document.getElementById('otp-modal');
+    modal.style.display = 'flex';
+    // Add brief timeout to allow display:flex to apply before animating opacity
+    setTimeout(() => {
+        modal.classList.add('open');
+        document.getElementById('otp-1').focus();
+    }, 10);
   }
 
   function closeOTPModal() {
-    document.getElementById('otp-modal').style.display = 'none';
+    const modal = document.getElementById('otp-modal');
+    modal.classList.remove('open');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // 300ms matches the var(--t-normal) transition
   }
 
   function verifyOTPAndDeliver() {
@@ -463,7 +495,7 @@
     console.log("Verifying OTP:", otp);
 
     if (otp.length < 4) {
-      showToast("Please enter a valid 4-digit OTP", "warning");
+      alert("Please enter a valid 4-digit OTP");
       return;
     }
 
@@ -593,6 +625,56 @@
       }
     }
   });
+
+  // Internal Map Navigation & Fallback Deep-Linking
+  function openNavigation(destinationText, originText = null) {
+    if (!destinationText) {
+      alert('Destination address is not available');
+      return;
+    }
+    
+    if (!window.deliveryTracker || !window.deliveryTracker.map || !google || !google.maps) {
+      // Fallback if map isn't fully loaded
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationText)}`;
+      window.open(mapsUrl, '_blank');
+      return;
+    }
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: destinationText }, function(destResults, destStatus) {
+      if (destStatus === 'OK' && destResults[0]) {
+        const destPos = {
+          lat: destResults[0].geometry.location.lat(),
+          lng: destResults[0].geometry.location.lng()
+        };
+        
+        if (originText) {
+          geocoder.geocode({ address: originText }, function(origResults, origStatus) {
+            if (origStatus === 'OK' && origResults[0]) {
+              const origPos = {
+                lat: origResults[0].geometry.location.lat(),
+                lng: origResults[0].geometry.location.lng()
+              };
+              window.deliveryTracker.calculateRoute(destPos, origPos);
+            } else {
+              window.deliveryTracker.calculateRoute(destPos);
+            }
+            document.getElementById('tracking-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        } else {
+          // Plot route using GPS or fallback map center
+          window.deliveryTracker.calculateRoute(destPos);
+          document.getElementById('tracking-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        // Fallback to deep link if geocoding fails
+        const url = originText 
+            ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(originText)}&destination=${encodeURIComponent(destinationText)}`
+            : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationText)}`;
+        window.open(url, '_blank');
+      }
+    });
+  }
 </script>
 
 <style>

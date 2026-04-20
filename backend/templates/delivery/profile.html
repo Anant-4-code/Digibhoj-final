@@ -28,6 +28,9 @@
     <a href="/delivery/dashboard" class="sidebar-item">
       <i class="fa fa-motorcycle"></i> Active Tasks
     </a>
+    <a href="/delivery/history" class="sidebar-item">
+      <i class="fa-solid fa-clock-rotate-left"></i> Delivery History
+    </a>
     
     <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
     <a href="/delivery/profile" class="sidebar-item active">
@@ -209,7 +212,7 @@
               <div id="saveIndicator" style="display:none;align-items:center;gap:8px;position:absolute;top:24px;right:24px;color:var(--green)">
                 <i class="fa fa-check-circle"></i> <span style="font-size:12px;font-weight:700">Saved</span>
               </div>
-              <button type="button" class="btn btn-primary" id="saveProfileBtn" style="position:fixed;bottom:24px;right:24px;box-shadow:0 4px 12px rgba(255,115,0,0.3);z-index:100;border-radius:var(--radius-full);padding:12px 24px;display:none" onclick="submitProfileForm()">
+              <button type="button" class="btn btn-primary" id="saveProfileBtn" style="position:fixed;bottom:24px;right:24px;box-shadow:0 4px 12px rgba(255,115,0,0.3);z-index:100;border-radius:var(--radius-full);padding:12px 24px;display:flex;align-items:center;gap:8px;" onclick="submitProfileForm()">
                 <i class="fa fa-save"></i> Save Changes
               </button>
             </form>
@@ -455,12 +458,14 @@
       const fileInput = document.getElementById(docType + 'File');
       if(!fileInput.files.length) return;
       
+      const btn = fileInput.nextElementSibling; // the upload button
+      const origText = btn ? btn.innerHTML : '';
+      if(btn) { btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...'; btn.disabled = true; }
+      
       const formData = new FormData();
       formData.append('doc_type', docType);
       formData.append('file', fileInput.files[0]);
       formData.append('agent_id', "{{ agent.id }}");
-      
-      showToast("Uploading...", "info");
       
       try {
           const res = await fetch('/api/delivery/profile/upload', {
@@ -469,22 +474,20 @@
           });
           const data = await res.json();
           if(res.ok) {
-              showToast(data.message, 'success');
-              setTimeout(() => location.reload(), 800);
+              showToast(data.message + ' ✅', 'success');
+              setTimeout(() => location.reload(), 900);
           } else {
-              showToast(data.detail, 'error');
+              showToast(data.detail || 'Upload failed', 'error');
+              if(btn) { btn.innerHTML = origText; btn.disabled = false; }
           }
       } catch(e) {
-          showToast("Upload failed", 'error');
+          showToast("Upload failed — network error", 'error');
+          if(btn) { btn.innerHTML = origText; btn.disabled = false; }
       }
   }
 
-  // Sticky Save logic
-  const inputs = document.querySelectorAll('#profileUpdateForm input, #profileUpdateForm select, #profileUpdateForm textarea');
+  // Save button is always visible — no need to wait for input change
   const saveBtn = document.getElementById('saveProfileBtn');
-  inputs.forEach(i => i.addEventListener('input', () => {
-      saveBtn.style.display = 'flex';
-  }));
 
   function submitProfileForm() {
       saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving...';

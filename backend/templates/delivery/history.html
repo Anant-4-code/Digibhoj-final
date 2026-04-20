@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Delivery History{% endblock %}
+
+{% block body %}
+<div class="app-layout">
+
+  <nav class="navbar" style="background:var(--orange)">
+    <div style="display:flex;align-items:center;gap:var(--space-4)">
+      <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
+      <a href="/delivery/dashboard" class="navbar-brand">Digi<span>Bhoj</span> Rider</a>
+    </div>
+    <div class="navbar-actions">
+      <div class="dropdown" data-dropdown>
+        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+          <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
+            <i class="fa fa-motorcycle"></i>
+          </div>
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} <i class="fa fa-chevron-down" style="font-size:10px;margin-left:4px"></i></span>
+        </div>
+        <div class="dropdown-menu">
+           <a href="/delivery/profile" class="dropdown-item"><i class="fa fa-user"></i> Profile</a>
+           <div class="dropdown-divider"></div>
+           <a href="/logout" class="dropdown-item danger"><i class="fa fa-sign-out-alt"></i> Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Overlay -->
+  <div class="mobile-overlay" id="mobileOverlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">Rider Actions</div>
+    <a href="/delivery/dashboard" class="sidebar-item">
+      <i class="fa fa-motorcycle"></i> Active Tasks
+    </a>
+    <a href="/delivery/history" class="sidebar-item active">
+      <i class="fa-solid fa-clock-rotate-left"></i> Delivery History
+    </a>
+
+    <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
+    <a href="/delivery/profile" class="sidebar-item">
+      <i class="fa fa-user-circle"></i> Profile & Vehicle
+    </a>
+  </aside>
+
+  <main class="main-content page-enter" style="padding:var(--space-8);max-width:1000px;margin:0 auto;">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <h1 style="font-size:1.8rem;letter-spacing:-0.5px">Delivery History</h1>
+        <p style="color:var(--text-muted)">Your full log of completed drop-offs and payouts</p>
+      </div>
+      <div class="status-badge" style="background:#fff3e0;color:var(--orange);font-weight:800">
+        <i class="fa fa-wallet"></i> Lifetime: ₹{{ "%.2f"|format(agent.total_earnings|default(0.0)) }}
+      </div>
+    </div>
+
+    <!-- History List -->
+    <div class="premium-card" style="padding:0;overflow:hidden;background:white">
+      <div style="padding:var(--space-5);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fafafa">
+        <h3 style="font-size:1.1rem;font-weight:800;color:var(--text)"><i class="fa fa-box-circle-check" style="color:var(--orange);margin-right:8px"></i> Delivery Log</h3>
+      </div>
+      
+      {% if completed_tasks %}
+      <div style="display:flex;flex-direction:column;">
+        {% for task in completed_tasks %}
+        <div style="padding:var(--space-5);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;transition:all var(--t-fast)" onmouseover="this.style.background='#fcfcfc'" onmouseout="this.style.background='transparent'">
+          <div>
+            <div style="font-weight:800;font-size:1.1rem;margin-bottom:6px;display:flex;align-items:center;gap:10px;color:var(--text)">
+               <span style="background:var(--bg);padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-family:monospace;letter-spacing:1px">#{{ task.order_id }}</span>
+               <span class="status-price-badge" style="background:#e8f5e9;color:var(--green);font-size:10px;padding:4px 8px;border-radius:4px;box-shadow:none;border:1px solid rgba(34,197,94,0.2)"><i class="fa fa-check-double"></i> DELIVERED</span>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <i class="fa fa-location-dot" style="color:var(--orange);opacity:0.8"></i> {{ task.drop_location }}
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;display:flex;gap:12px">
+              <span><i class="fa fa-calendar-alt" style="margin-right:4px;opacity:0.5"></i> {{ task.assigned_at.strftime('%b %d, %Y') if task.assigned_at else 'N/A' }}</span>
+              <span><i class="fa fa-clock" style="margin-right:4px;opacity:0.5"></i> {{ task.assigned_at.strftime('%I:%M %p') if task.assigned_at else 'N/A' }}</span>
+            </div>
+          </div>
+          <!-- Earning Info -->
+          <div style="text-align:right">
+            <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Payout</div>
+            <div style="font-size:1.6rem;font-weight:900;color:var(--text);letter-spacing:-1px">₹{{ "%.2f"|format(task.total_amount or 0) }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="text-align:center;padding:var(--space-10) 0;background:white;">
+        <div style="font-size:3rem;color:var(--text-muted);opacity:0.2;margin-bottom:var(--space-3)"><i class="fa fa-motorcycle"></i></div>
+        <h3 style="color:var(--text);margin-bottom:8px">No Deliveries Yet</h3>
+        <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-5)">Your completed drop-offs and earnings will appear here.</p>
+        <a href="/delivery/dashboard" class="btn btn-primary btn-lg"><i class="fa fa-bolt"></i> Find Orders</a>
+      </div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+
+<!-- Mobile Sidebar Script -->
+<script>
+  document.getElementById('menuToggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('mobileOverlay').classList.toggle('open');
+  });
+  document.getElementById('mobileOverlay').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.remove('open');
+    this.classList.remove('open');
+  });
+</script>
+{% endblock %}

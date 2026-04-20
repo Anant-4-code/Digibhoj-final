@@ -64,7 +64,7 @@
     <!-- Tabs Navigation -->
     <div style="display:flex;gap:var(--space-6);border-bottom:2px solid var(--border);margin-bottom:var(--space-6)">
       <a href="#" class="tab-link active" onclick="switchTab(event, 'alacarte')" style="padding:var(--space-2) 0;font-weight:600;color:var(--orange);border-bottom:2px solid var(--orange);margin-bottom:-2px;text-decoration:none">
-        <i class="fa fa-utensils"></i> A la Carte Menu
+        <i class="fa fa-utensils"></i> Menu
       </a>
       <a href="#" class="tab-link" onclick="switchTab(event, 'mealplans')" style="padding:var(--space-2) 0;font-weight:600;color:var(--text-muted);text-decoration:none">
         <i class="fa fa-calendar-alt"></i> Meal Plans
@@ -200,7 +200,7 @@
       <h3 class="modal-title">Edit Meal</h3>
       <button class="modal-close" data-modal-close>×</button>
     </div>
-    <form id="editMealForm" action="" method="POST">
+    <form id="editMealForm" action="" method="POST" enctype="multipart/form-data">
       <div class="form-group">
         <label class="form-label" for="edit_name">Meal Name</label>
         <input type="text" id="edit_name" name="name" class="form-control" required>
@@ -240,8 +240,12 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="edit_image_url">Image URL</label>
-        <input type="url" id="edit_image_url" name="image_url" class="form-control">
+        <label class="form-label" for="edit_image_url">Upload Meal Image</label>
+        <div style="display:flex;gap:var(--space-2);flex-direction:column">
+          <input type="file" id="edit_image_upload" name="meal_image" class="form-control" accept="image/*">
+          <div style="font-size:11px;color:var(--text-muted)">Or provide an image URL below:</div>
+          <input type="url" id="edit_image_url" name="image_url" class="form-control">
+        </div>
       </div>
       
       <button type="submit" class="btn btn-primary btn-full">Update Meal</button>
@@ -256,7 +260,7 @@
       <h3 class="modal-title">Add New Meal</h3>
       <button class="modal-close" data-modal-close>×</button>
     </div>
-    <form action="/provider/action/meal/add" method="POST">
+    <form action="/provider/action/meal/add" method="POST" enctype="multipart/form-data">
       <div class="form-group">
         <label class="form-label" for="name">Meal Name</label>
         <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Deluxe Veg Thali" required>
@@ -296,8 +300,12 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="image_url">Image URL (Optional)</label>
-        <input type="url" id="image_url" name="image_url" class="form-control" placeholder="https://example.com/meal.jpg">
+        <label class="form-label" for="image_url">Upload Meal Image (Optional)</label>
+        <div style="display:flex;gap:var(--space-2);flex-direction:column">
+          <input type="file" id="image_upload" name="meal_image" class="form-control" accept="image/*">
+          <div style="font-size:11px;color:var(--text-muted)">Or provide an image URL below:</div>
+          <input type="url" id="image_url" name="image_url" class="form-control" placeholder="https://example.com/meal.jpg">
+        </div>
       </div>
       
       <button type="submit" class="btn btn-primary btn-full">Create Meal</button>
