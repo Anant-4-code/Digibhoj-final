@@ -3,7 +3,7 @@
 
 {% block body %}
 <div class="app-layout">
-  
+
   <nav class="navbar" style="background:var(--orange)">
     <div style="display:flex;align-items:center;gap:var(--space-4)">
       <button class="menu-toggle" id="menuToggle"><i class="fa fa-bars"></i></button>
@@ -17,30 +17,43 @@
           <span class="count" style="background:var(--red);top:-8px;right:-8px">1</span>
         </div>
         <div class="dropdown-menu" style="width:300px;right:-10px;top:45px">
-          <div style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;color:var(--text)">
+          <div
+            style="padding:12px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;color:var(--text)">
             Notifications <span style="font-size:10px;color:var(--orange);cursor:pointer">Mark all as read</span>
           </div>
           <div style="max-height:300px;overflow-y:auto;color:var(--text)">
-            <a href="#" class="dropdown-item" style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
-              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;color:var(--text)">New Delivery Assigned! <i class="fa fa-map-marker-alt text-orange" style="margin-left:4px"></i></div>
-              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Order #4092 pickup from Swadist Mess.</div>
+            <a href="#" class="dropdown-item"
+              style="padding:12px 16px;white-space:normal;border-bottom:1px solid var(--border)">
+              <div style="font-weight:600;font-size:var(--sm);margin-bottom:2px;color:var(--text)">New Delivery
+                Assigned! <i class="fa fa-map-marker-alt text-orange" style="margin-left:4px"></i></div>
+              <div style="font-size:12px;color:var(--text-muted);line-height:1.4">Order #4092 pickup from Swadist Mess.
+              </div>
             </a>
           </div>
-          <a href="#" class="dropdown-item" style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View All</a>
+          <a href="#" class="dropdown-item"
+            style="padding:12px;text-align:center;color:var(--orange);font-weight:600;font-size:var(--sm);border-top:1px solid var(--border)">View
+            All</a>
         </div>
       </div>
 
-      <div class="availability-toggle" style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);padding:4px 12px;border-radius:20px;cursor:pointer" onclick="toggleAvailability(this)" data-status="{{ agent.availability.value }}">
-        <div class="toggle-circle" style="width:10px;height:10px;border-radius:50%;background:{% if agent.availability.value == 'online' %}#00e676{% else %}#aaa{% endif %}"></div>
-        <span class="toggle-text" style="color:white;font-size:12px;font-weight:600">{{ 'Online' if agent.availability.value == 'online' else 'Offline' }}</span>
+      <div class="availability-toggle"
+        style="display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.2);padding:4px 12px;border-radius:20px;cursor:pointer"
+        onclick="toggleAvailability(this)" data-status="{{ agent.availability.value }}">
+        <div class="toggle-circle"
+          style="width:10px;height:10px;border-radius:50%;background:{% if agent.availability.value == 'online' %}#00e676{% else %}#aaa{% endif %}">
+        </div>
+        <span class="toggle-text" style="color:white;font-size:12px;font-weight:600">{{ 'Online' if
+          agent.availability.value == 'online' else 'Offline' }}</span>
       </div>
-      
+
       <div class="dropdown" data-dropdown>
-        <div style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white" data-dropdown-trigger>
+        <div
+          style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;background:rgba(255,255,255,0.1);padding:4px 12px 4px 4px;border-radius:var(--radius-full);color:white"
+          data-dropdown-trigger>
           <div class="avatar" style="width:32px;height:32px;background:white;color:var(--orange)">
             <i class="fa fa-motorcycle"></i>
           </div>
-          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }} 
+          <span style="font-size:var(--sm);font-weight:500">{{ user.name.split()[0] }}
             {% if agent.verification_status.value == 'verified' %}
             <i class="fa fa-circle-check" style="color:#b3e5fc;margin-left:4px" title="Verified Rider"></i>
             {% endif %}
@@ -64,7 +77,7 @@
     <a href="/delivery/dashboard" class="sidebar-item active">
       <i class="fa fa-motorcycle"></i> Active Tasks
     </a>
-    
+
     <div class="sidebar-section" style="margin-top:var(--space-6)">Account</div>
     <a href="/delivery/profile" class="sidebar-item">
       <i class="fa fa-user-circle"></i> Profile & Vehicle
@@ -77,15 +90,18 @@
         <h1>Ride Dashboard</h1>
         <p>Manage your active delivery assignments</p>
       </div>
-      <div class="status-badge status-{{ agent.verification_status.value }}" style="font-size:var(--sm);padding:8px 16px">
-        <i class="fa fa-{% if agent.verification_status.value == 'verified' %}check-circle{% else %}clock{% endif %}"></i> 
+      <div class="status-badge status-{{ agent.verification_status.value }}"
+        style="font-size:var(--sm);padding:8px 16px">
+        <i
+          class="fa fa-{% if agent.verification_status.value == 'verified' %}check-circle{% else %}clock{% endif %}"></i>
         Account {{ agent.verification_status.value|title }}
       </div>
     </div>
 
     {% if agent.verification_status.value == 'pending' %}
     <div class="alert-box alert-warning">
-      <i class="fa fa-info-circle"></i> Your delivery account is currently pending admin verification. You cannot receive orders yet.
+      <i class="fa fa-info-circle"></i> Your delivery account is currently pending admin verification. You cannot
+      receive orders yet.
     </div>
     {% endif %}
     {% if agent.verification_status.value == 'blocked' %}
@@ -118,22 +134,59 @@
     </div>
     <div class="section-card" style="margin-top:var(--space-8);padding:0;background:transparent;box-shadow:none">
       <h3 class="section-card-title" style="margin-bottom:var(--space-4)">Active Deliveries</h3>
-      
+
       <div style="display:grid;grid-template-columns:1fr 340px;gap:var(--space-6);align-items:start">
         <!-- Interactive Map and Actions -->
         <div>
-          <div id="tracking-map" style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--border);height:500px;position:relative;margin-bottom:var(--space-4)">
-            <!-- Custom Map Controls (Extracted from old version) -->
-            <div class="map-controls">
-                <button class="map-control-btn" id="center-location" title="Center on my location">
-                    <i class="fas fa-crosshairs"></i>
+          <div id="tracking-map"
+            style="background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--border);height:500px;position:relative;margin-bottom:var(--space-4)">
+
+            <!-- Modern Map Controls -->
+            <div class="map-controls"
+              style="position:absolute; right:16px; top:16px; z-index:10; display:flex; flex-direction:column; gap:8px;">
+              <!-- Layer Menu Button -->
+              <div style="position:relative">
+                <button class="map-control-btn shadow-btn" id="map-layer-btn" title="Change map type"
+                  onclick="document.getElementById('map-layer-menu').classList.toggle('active')">
+                  <i class="fas fa-layer-group"></i>
                 </button>
-                <button class="map-control-btn" id="toggle-traffic" title="Toggle traffic">
-                    <i class="fas fa-road"></i>
-                </button>
-                <button class="map-control-btn" id="fullscreen-map" title="Fullscreen">
-                    <i class="fas fa-expand"></i>
-                </button>
+                <!-- Floating Popover for Map Layers -->
+                <div id="map-layer-menu" class="map-layer-popover">
+                  <div
+                    style="font-weight:600; font-size:14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                    Map type
+                    <i class="fa fa-times" style="cursor:pointer;color:var(--text-muted)"
+                      onclick="document.getElementById('map-layer-menu').classList.remove('active')"></i>
+                  </div>
+                  <div style="display:flex; gap:16px;">
+                    <div class="map-type-option active" data-type="roadmap" onclick="changeMapType(this, 'roadmap')">
+                      <div class="map-type-img default-map"></div>
+                      <span>Default</span>
+                    </div>
+                    <div class="map-type-option" data-type="satellite" onclick="changeMapType(this, 'hybrid')">
+                      <div class="map-type-img satellite-map"></div>
+                      <span>Satellite</span>
+                    </div>
+                    <div class="map-type-option" data-type="terrain" onclick="changeMapType(this, 'terrain')">
+                      <div class="map-type-img terrain-map"></div>
+                      <span>Terrain</span>
+                    </div>
+                  </div>
+                  <hr style="border:none;border-top:1px solid var(--border);margin:16px 0;">
+                  <div style="font-weight:600; font-size:14px; margin-bottom:12px;">Map details</div>
+                  <div class="map-type-option active" id="traffic-toggle-opt" onclick="toggleTrafficLayer(this)">
+                    <div class="map-type-img traffic-map"><i class="fa fa-road"></i></div>
+                    <span>Traffic</span>
+                  </div>
+                </div>
+              </div>
+
+              <button class="map-control-btn shadow-btn" id="center-location" title="Center on my location">
+                <i class="fas fa-crosshairs"></i>
+              </button>
+              <button class="map-control-btn shadow-btn" id="fullscreen-map" title="Fullscreen">
+                <i class="fas fa-expand"></i>
+              </button>
             </div>
 
             <!-- Google Map Instance -->
@@ -141,19 +194,22 @@
 
             <!-- Loading Overlay -->
             <div class="map-loading" id="map-loading">
-                <div class="loading-spinner"></div>
-                <p style="color:var(--text);font-size:var(--sm);margin-top:var(--space-2)">Initializing Maps...</p>
+              <div class="loading-spinner"></div>
+              <p style="color:var(--text);font-size:var(--sm);margin-top:var(--space-2)">Initializing Maps...</p>
             </div>
-            
+
             <!-- ETA Badge -->
             <div id="delivery-eta" class="eta-badge">Connecting to GPS...</div>
           </div>
 
           <!-- Quick Action Bar -->
           <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-6)">
-            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.open('https://wa.me/')"><i class="fab fa-whatsapp"></i> Chat</button>
-            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.location.href='tel:'"><i class="fa fa-phone"></i> Call</button>
-            <button class="btn btn-secondary magnetic" style="flex:1" onclick="window.deliveryTracker.initMap()"><i class="fa fa-sync"></i> Refresh Map</button>
+            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.open('https://wa.me/')"><i
+                class="fab fa-whatsapp"></i> Chat</button>
+            <button class="btn btn-outline magnetic" style="flex:1" onclick="window.location.href='tel:'"><i
+                class="fa fa-phone"></i> Call</button>
+            <button class="btn btn-secondary magnetic" style="flex:1" onclick="window.deliveryTracker.initMap()"><i
+                class="fa fa-sync"></i> Refresh Map</button>
           </div>
         </div>
 
@@ -190,314 +246,400 @@
         </div>
       </div>
 
-        <!-- Task List -->
-        <div style="display:flex;flex-direction:column;gap:var(--space-4);max-height:600px;overflow-y:auto;padding-right:var(--space-2)" class="custom-scrollbar">
-          {% if active_tasks %}
-            {% for task in active_tasks %}
-            <div class="task-card-status-{{ task.status.value }}" style="flex-shrink:0;background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
-              
-              <div class="task-header-status-{{ task.status.value }}" style="padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-                <strong style="color:var(--text);font-size:1rem">Order #{{ task.order_id }}</strong>
-                <span class="status-badge status-{{ task.status.value }}" style="font-size:10px">{{ task.status.value|replace('_', ' ')|title }}</span>
+      <!-- Task List -->
+      <div
+        style="display:flex;flex-direction:column;gap:var(--space-4);max-height:600px;overflow-y:auto;padding-right:var(--space-2)"
+        class="custom-scrollbar">
+        {% if active_tasks %}
+        {% for task in active_tasks %}
+        <div class="task-card-status-{{ task.status.value }}"
+          style="flex-shrink:0;background:white;border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm)">
+
+          <div class="task-header-status-{{ task.status.value }}"
+            style="padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <strong style="color:var(--text);font-size:1rem">Order #{{ task.order_id }}</strong>
+            <span class="status-badge status-{{ task.status.value }}" style="font-size:10px">{{
+              task.status.value|replace('_', ' ')|title }}</span>
+          </div>
+
+          <div style="padding:var(--space-4)">
+
+            <!-- Route Tracking UI -->
+            <div
+              style="display:flex;flex-direction:column;gap:var(--space-3);position:relative;margin-bottom:var(--space-4)">
+              <div
+                style="position:absolute;left:15px;top:20px;bottom:20px;width:2px;background:var(--border);z-index:1">
               </div>
-              
-              <div style="padding:var(--space-4)">
-                
-                <!-- Route Tracking UI -->
-                <div style="display:flex;flex-direction:column;gap:var(--space-3);position:relative;margin-bottom:var(--space-4)">
-                  <div style="position:absolute;left:15px;top:20px;bottom:20px;width:2px;background:var(--border);z-index:1"></div>
-                  
-                  <div style="display:flex;gap:var(--space-3);position:relative;z-index:2">
-                    <div style="width:32px;height:32px;border-radius:50%;background:black;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0"><i class="fa fa-store"></i></div>
-                    <div>
-                      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Pickup</div>
-                      <div style="font-weight:600;font-size:var(--sm)">{{ task.pickup_location }}</div>
-                      <div style="font-size:11px;color:black;margin-top:2px;font-weight:500"><i class="fa fa-phone-alt"></i> Call {{ task.order.provider.mess_name }}</div>
-                    </div>
+
+              <div style="display:flex;gap:var(--space-3);position:relative;z-index:2">
+                <div
+                  style="width:32px;height:32px;border-radius:50%;background:black;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">
+                  <i class="fa fa-store"></i></div>
+                <div> 
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Pickup
                   </div>
-                  
-                  <div style="display:flex;gap:var(--space-3);position:relative;z-index:2;margin-top:var(--space-2)">
-                    <div style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0"><i class="fa fa-home"></i></div>
-                    <div>
-                      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Drop-off</div>
-                      <div style="font-weight:600;font-size:var(--sm)">{{ task.drop_location }}</div>
-                      <div style="font-size:11px;color:var(--green);margin-top:2px;font-weight:500"><i class="fa fa-phone-alt"></i> Call {{ task.order.customer.user.name }}</div>
-                    </div>
-                  </div>
+                  <div style="font-weight:600;font-size:var(--sm)">{{ task.pickup_location }}</div>
+                  <div style="font-size:11px;color:black;margin-top:2px;font-weight:500"><i class="fa fa-phone-alt"></i>
+                    Call {{ task.order.provider.mess_name }}</div>
                 </div>
-                
-                <hr style="border:none;border-top:1px dashed var(--border);margin-bottom:var(--space-4)">
-                
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
-                  <div style="font-size:var(--sm);color:var(--text-muted)">Est. Earnings</div>
-                  <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ (task.order.total_price * 0.1)|int }}</div>
-                </div>
+              </div>
+
+              <div style="display:flex;gap:var(--space-3);position:relative;z-index:2;margin-top:var(--space-2)">
+                <div
+                  style="width:32px;height:32px;border-radius:50%;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">
+                  <i class="fa fa-home"></i></div>
                 <div>
-                  {% if task.status == 'assigned' or task.status.value == 'assigned' %}
-                  <div class="assignment-timer-container" data-task-id="{{ task.id }}">
-                    <div style="text-align:center;color:var(--red);font-weight:700;margin-bottom:8px;font-size:14px;">
-                        <i class="fa fa-stopwatch"></i> <span class="countdown-text" id="countdown-{{ task.id }}">15</span>s to Accept
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
-                      <form action="/delivery/action/accept/{{ task.id }}" method="POST">
-                        <button type="submit" class="btn btn-primary btn-full magnetic" style="background:var(--orange);color:white">
-                          <i class="fa fa-check"></i> Accept
-                        </button>
-                      </form>
-                      <form action="/delivery/action/reject/{{ task.id }}" id="form-reject-{{ task.id }}" method="POST">
-                        <button type="button" onclick="document.getElementById('form-reject-{{ task.id }}').submit()" class="btn btn-outline btn-full magnetic" style="border-color:var(--red);color:var(--red)">
-                          <i class="fa fa-times"></i> Reject
-                        </button>
-                      </form>
-                    </div>
+                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Drop-off
                   </div>
-                  {% elif task.status == 'accepted' or task.status.value == 'accepted' %}
-                  <button class="btn btn-warning btn-full magnetic" style="margin-bottom:8px" onclick="updateCurrentTaskStatus('picked_up', '{{ task.order_id }}')">
-                    <i class="fa fa-box-open"></i> Mark Picked Up
-                  </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
-                  {% elif task.status == 'picked_up' or task.status.value == 'picked_up' %}
-                  <button class="btn btn-primary btn-full magnetic" style="background:#1565c0;color:white;margin-bottom:8px" onclick="updateCurrentTaskStatus('out_for_delivery', '{{ task.order_id }}')">
-                    <i class="fa fa-truck-fast"></i> Mark Out for Delivery
-                  </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
-                  {% elif task.status == 'out_for_delivery' or task.status.value == 'out_for_delivery' %}
-                  <button class="btn btn-success btn-full magnetic" style="background:var(--green);color:white;margin-bottom:8px" onclick="openOTPModal('{{ task.order_id }}')">
-                    <i class="fa fa-check-circle"></i> Complete Drop-off
-                  </button>
-                  <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i class="fa fa-location-arrow"></i> Navigate</button>
-                  {% else %}
-                  <div style="text-align:center;padding:10px;background:var(--bg-color);border-radius:var(--radius-md);font-size:12px;color:var(--text-muted)">
-                    Status: {{ task.status.value or task.status }}
-                  </div>
-                  {% endif %}
+                  <div style="font-weight:600;font-size:var(--sm)">{{ task.drop_location }}</div>
+                  <div style="font-size:11px;color:var(--green);margin-top:2px;font-weight:500"><i
+                      class="fa fa-phone-alt"></i> Call {{ task.order.customer.user.name }}</div>
                 </div>
-                
               </div>
             </div>
-            {% endfor %}
-          {% else %}
-            <div class="empty-state" style="background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px dashed var(--border)">
-              <div style="width:60px;height:60px;border-radius:50%;background:rgba(21,101,192,0.1);color:#1565c0;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto var(--space-4)">
-                <i class="fa fa-radar"></i>
-              </div>
-              <h3 style="margin-bottom:var(--space-2)">Searching for orders...</h3>
-              <p style="color:var(--text-muted);font-size:var(--sm);max-width:250px;margin:0 auto">Stay online in {{ agent.service_area|default('your area') }} to receive new delivery assignments.</p>
+
+            <hr style="border:none;border-top:1px dashed var(--border);margin-bottom:var(--space-4)">
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
+              <div style="font-size:var(--sm);color:var(--text-muted)">Est. Earnings</div>
+              <div style="font-size:1.2rem;font-weight:800;color:var(--orange)">₹{{ (task.order.total_price * 0.1)|int
+                }}</div>
             </div>
-          {% endif %}
+            <div>
+              {% if task.status == 'assigned' or task.status.value == 'assigned' %}
+              <div class="assignment-timer-container" data-task-id="{{ task.id }}">
+                <div style="text-align:center;color:var(--red);font-weight:700;margin-bottom:8px;font-size:14px;">
+                  <i class="fa fa-stopwatch"></i> <span class="countdown-text" id="countdown-{{ task.id }}">15</span>s
+                  to Accept
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+                  <form action="/delivery/action/accept/{{ task.id }}" method="POST">
+                    <button type="submit" class="btn btn-primary btn-full magnetic"
+                      style="background:var(--orange);color:white">
+                      <i class="fa fa-check"></i> Accept
+                    </button>
+                  </form>
+                  <form action="/delivery/action/reject/{{ task.id }}" id="form-reject-{{ task.id }}" method="POST">
+                    <button type="button" onclick="document.getElementById('form-reject-{{ task.id }}').submit()"
+                      class="btn btn-outline btn-full magnetic" style="border-color:var(--red);color:var(--red)">
+                      <i class="fa fa-times"></i> Reject
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {% elif task.status == 'accepted' or task.status.value == 'accepted' %}
+              <button class="btn btn-warning btn-full magnetic" style="margin-bottom:8px"
+                onclick="updateCurrentTaskStatus('picked_up', '{{ task.order_id }}')">
+                <i class="fa fa-box-open"></i> Mark Picked Up
+              </button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
+                  class="fa fa-location-arrow"></i> Navigate</button>
+              {% elif task.status == 'picked_up' or task.status.value == 'picked_up' %}
+              <button class="btn btn-primary btn-full magnetic" style="background:#1565c0;color:white;margin-bottom:8px"
+                onclick="updateCurrentTaskStatus('out_for_delivery', '{{ task.order_id }}')">
+                <i class="fa fa-truck-fast"></i> Mark Out for Delivery
+              </button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
+                  class="fa fa-location-arrow"></i> Navigate</button>
+              {% elif task.status == 'out_for_delivery' or task.status.value == 'out_for_delivery' %}
+              <button class="btn btn-success btn-full magnetic"
+                style="background:var(--green);color:white;margin-bottom:8px"
+                onclick="openOTPModal('{{ task.order_id }}')">
+                <i class="fa fa-check-circle"></i> Complete Drop-off
+              </button>
+              <button class="btn btn-outline btn-full" style="padding:10px" onclick="initMap()"><i
+                  class="fa fa-location-arrow"></i> Navigate</button>
+              {% else %}
+              <div
+                style="text-align:center;padding:10px;background:var(--bg-color);border-radius:var(--radius-md);font-size:12px;color:var(--text-muted)">
+                Status: {{ task.status.value or task.status }}
+              </div>
+              {% endif %}
+            </div>
+
+          </div>
         </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state"
+          style="background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px dashed var(--border)">
+          <div
+            style="width:60px;height:60px;border-radius:50%;background:rgba(21,101,192,0.1);color:#1565c0;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto var(--space-4)">
+            <i class="fa fa-radar"></i>
+          </div>
+          <h3 style="margin-bottom:var(--space-2)">Searching for orders...</h3>
+          <p style="color:var(--text-muted);font-size:var(--sm);max-width:250px;margin:0 auto">Stay online in {{
+            agent.service_area|default('your area') }} to receive new delivery assignments.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
-  <!-- OTP Verification Modal -->
+</div>
+<!-- OTP Verification Modal -->
 <div id="otp-modal" class="modal-overlay" style="display:none">
   <div class="modal-content" style="max-width:400px;text-align:center">
-    <div style="width:60px;height:60px;background:#e8f5e9;color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4);font-size:1.5rem">
+    <div
+      style="width:60px;height:60px;background:#e8f5e9;color:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto var(--space-4);font-size:1.5rem">
       <i class="fa fa-shield-check"></i>
     </div>
     <h3 style="margin-bottom:var(--space-2)">Confirm Delivery</h3>
-    <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">Enter the 4-digit OTP provided by the customer to complete this delivery.</p>
-    
+    <p style="color:var(--text-muted);font-size:var(--sm);margin-bottom:var(--space-6)">Enter the 4-digit OTP provided
+      by the customer to complete this delivery.</p>
+
     <div style="display:flex;gap:var(--space-3);justify-content:center;margin-bottom:var(--space-6)" id="otp-inputs">
-      <input type="text" maxlength="1" class="form-control otp-input" id="otp-1" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control otp-input" id="otp-2" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control otp-input" id="otp-3" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
-      <input type="text" maxlength="1" class="form-control otp-input" id="otp-4" style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-1"
+        style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-2"
+        style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-3"
+        style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
+      <input type="text" maxlength="1" class="form-control otp-input" id="otp-4"
+        style="width:50px;height:50px;text-align:center;font-size:1.5rem;font-weight:700">
     </div>
-    
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
       <button class="btn btn-outline" onclick="closeOTPModal()">Cancel</button>
-      <button class="btn btn-primary" style="background:var(--green);color:white" onclick="verifyOTPAndDeliver()">Verify & Deliver</button>
+      <button class="btn btn-primary" style="background:var(--green);color:white" onclick="verifyOTPAndDeliver()">Verify
+        & Deliver</button>
     </div>
   </div>
 </div>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCHcy-Q_QUtr47GktdKg7UNvvRKKYOpxE&libraries=geometry,places,routes,marker&callback=initMap"></script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDCHcy-Q_QUtr47GktdKg7UNvvRKKYOpxE&libraries=geometry,places,routes,marker&callback=initMap"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/assets/js/delivery-tracking.js"></script>
 
 <script>
-window.agentId = "{{ agent.id }}";
-let currentOrderIdForDelivery = null;
+  window.agentId = "{{ agent.id }}";
+  let currentOrderIdForDelivery = null;
 
-function updateCurrentTaskStatus(status, orderId, otp = null) {
+  function updateCurrentTaskStatus(status, orderId, otp = null) {
     console.log(`Updating order ${orderId} status to ${status}...`);
     const endpointMap = {
-        'picked_up': `/api/delivery/picked/${orderId}`,
-        'out_for_delivery': `/api/delivery/out-for-delivery/${orderId}`,
-        'delivered': `/api/delivery/delivered/${orderId}` + (otp ? `?otp=${otp}` : '')
+      'picked_up': `/api/delivery/picked/${orderId}`,
+      'out_for_delivery': `/api/delivery/out-for-delivery/${orderId}`,
+      'delivered': `/api/delivery/delivered/${orderId}` + (otp ? `?otp=${otp}` : '')
     };
-    
+
     const url = endpointMap[status];
     if (!url) {
-        console.error("Invalid status:", status);
-        return;
+      console.error("Invalid status:", status);
+      return;
     }
 
     fetch(url, { method: 'PUT' })
-    .then(r => {
+      .then(r => {
         if (r.ok) {
-            showToast(`Delivery status updated to ${status.replace(/_/g, ' ')}! 🚚`, 'success');
-            setTimeout(() => window.location.reload(), 1000);
+          showToast(`Delivery status updated to ${status.replace(/_/g, ' ')}! 🚚`, 'success');
+          setTimeout(() => window.location.reload(), 1000);
         } else {
-            r.json().then(data => {
-                console.error("Status update failed:", data);
-                showToast(data.detail || "Update failed", "error");
-            });
+          r.json().then(data => {
+            console.error("Status update failed:", data);
+            showToast(data.detail || "Update failed", "error");
+          });
         }
-    })
-    .catch(err => {
+      })
+      .catch(err => {
         console.error("Network error updating status:", err);
         showToast("Network error. Please try again.", "error");
-    });
-}
+      });
+  }
 
-function openOTPModal(orderId) {
+  function openOTPModal(orderId) {
     console.log("Opening OTP Modal for Order:", orderId);
     currentOrderIdForDelivery = orderId;
     document.getElementById('otp-modal').style.display = 'flex';
     document.getElementById('otp-1').focus();
-}
+  }
 
-function closeOTPModal() {
+  function closeOTPModal() {
     document.getElementById('otp-modal').style.display = 'none';
-}
+  }
 
-function verifyOTPAndDeliver() {
+  function verifyOTPAndDeliver() {
     // Get OTP value
     const otp = Array.from(document.querySelectorAll('.otp-input')).map(i => i.value).join('');
     console.log("Verifying OTP:", otp);
-    
+
     if (otp.length < 4) {
-        showToast("Please enter a valid 4-digit OTP", "warning");
-        return;
+      showToast("Please enter a valid 4-digit OTP", "warning");
+      return;
     }
-    
+
     updateCurrentTaskStatus('delivered', currentOrderIdForDelivery, otp);
     closeOTPModal();
-}
+  }
 
-// OTP Auto-focus Next logic
-document.addEventListener('DOMContentLoaded', () => {
+  // OTP Auto-focus Next logic
+  document.addEventListener('DOMContentLoaded', () => {
     const otpInputs = document.querySelectorAll('.otp-input');
     otpInputs.forEach((input, index) => {
-        input.addEventListener('input', (e) => {
-            if (e.target.value.length === 1 && index < otpInputs.length - 1) {
-                otpInputs[index + 1].focus();
-            }
-        });
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && e.target.value.length === 0 && index > 0) {
-                otpInputs[index - 1].focus();
-            }
-        });
+      input.addEventListener('input', (e) => {
+        if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+          otpInputs[index + 1].focus();
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && e.target.value.length === 0 && index > 0) {
+          otpInputs[index - 1].focus();
+        }
+      });
     });
     document.querySelectorAll('.assignment-timer-container').forEach(container => {
-        let remaining = 15;
-        const taskId = container.dataset.taskId;
-        const textEl = document.getElementById('countdown-' + taskId);
-        
-        const interval = setInterval(() => {
-            remaining--;
-            if(textEl) textEl.textContent = remaining;
-            
-            if(remaining <= 0) {
-                clearInterval(interval);
-                container.innerHTML = "<div style='text-align:center;color:var(--red);padding:10px;font-weight:bold;'><i class='fa fa-times-circle'></i> Offer Expired</div>";
-                document.getElementById('form-reject-' + taskId).submit();
-            }
-        }, 1000);
+      let remaining = 15;
+      const taskId = container.dataset.taskId;
+      const textEl = document.getElementById('countdown-' + taskId);
+
+      const interval = setInterval(() => {
+        remaining--;
+        if (textEl) textEl.textContent = remaining;
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          container.innerHTML = "<div style='text-align:center;color:var(--red);padding:10px;font-weight:bold;'><i class='fa fa-times-circle'></i> Offer Expired</div>";
+          document.getElementById('form-reject-' + taskId).submit();
+        }
+      }, 1000);
     });
 
     // Real-Time Earnings and Deliveries Polling
     setInterval(async () => {
-        try {
-            const res = await fetch(`/api/delivery/earnings/${window.agentId}`);
-            if (res.ok) {
-                const data = await res.json();
-                
-                const earningsEl = document.getElementById('todays-earnings');
-                if (earningsEl && data.total_earnings !== undefined) {
-                    const currentEarnings = parseFloat(earningsEl.innerText.replace(/,/g, '')) || 0;
-                    if (data.total_earnings > currentEarnings) {
-                        earningsEl.innerText = Math.floor(data.total_earnings);
-                    }
-                }
-                
-                const deliveriesEl = document.getElementById('todays-deliveries');
-                if (deliveriesEl && data.completed_deliveries !== undefined) {
-                    const currentDeliveries = parseInt(deliveriesEl.innerText.replace(/,/g, '')) || 0;
-                    if (data.completed_deliveries > currentDeliveries) {
-                        deliveriesEl.innerText = data.completed_deliveries;
-                    }
-                }
-            }
-        } catch (e) { console.error('Error fetching real-time dashboard stats', e); }
-    }, 15000);
-});
+      try {
+        const res = await fetch(`/api/delivery/earnings/${window.agentId}`);
+        if (res.ok) {
+          const data = await res.json();
 
-async function toggleAvailability(el) {
+          const earningsEl = document.getElementById('todays-earnings');
+          if (earningsEl && data.total_earnings !== undefined) {
+            const currentEarnings = parseFloat(earningsEl.innerText.replace(/,/g, '')) || 0;
+            if (data.total_earnings > currentEarnings) {
+              earningsEl.innerText = Math.floor(data.total_earnings);
+            }
+          }
+
+          const deliveriesEl = document.getElementById('todays-deliveries');
+          if (deliveriesEl && data.completed_deliveries !== undefined) {
+            const currentDeliveries = parseInt(deliveriesEl.innerText.replace(/,/g, '')) || 0;
+            if (data.completed_deliveries > currentDeliveries) {
+              deliveriesEl.innerText = data.completed_deliveries;
+            }
+          }
+        }
+      } catch (e) { console.error('Error fetching real-time dashboard stats', e); }
+    }, 15000);
+  });
+
+  async function toggleAvailability(el) {
     const current = el.dataset.status;
     const next = current === 'online' ? 'offline' : 'online';
-    
+
     // Optimistic UI update
     el.dataset.status = next;
     el.querySelector('.toggle-text').textContent = next.charAt(0).toUpperCase() + next.slice(1);
     el.querySelector('.toggle-circle').style.background = next === 'online' ? '#00e676' : '#aaa';
-    
+
     try {
-        const res = await fetch(`/api/delivery/availability/{{ agent.id }}?status=${next}`, { method: 'PUT' });
-        if(!res.ok) throw new Error("Failed");
-        showToast(`You are now ${next}!`, 'success');
-        if(next === 'online' && window.deliveryTracker) window.deliveryTracker.startTracking();
-    } catch(e) {
-        // Revert on fail
-        el.dataset.status = current;
-        el.querySelector('.toggle-text').textContent = current.charAt(0).toUpperCase() + current.slice(1);
-        el.querySelector('.toggle-circle').style.background = current === 'online' ? '#00e676' : '#aaa';
-        showToast("Could not update status.", 'error');
+      const res = await fetch(`/api/delivery/availability/{{ agent.id }}?status=${next}`, { method: 'PUT' });
+      if (!res.ok) throw new Error("Failed");
+      showToast(`You are now ${next}!`, 'success');
+      if (next === 'online' && window.deliveryTracker) window.deliveryTracker.startTracking();
+    } catch (e) {
+      // Revert on fail
+      el.dataset.status = current;
+      el.querySelector('.toggle-text').textContent = current.charAt(0).toUpperCase() + current.slice(1);
+      el.querySelector('.toggle-circle').style.background = current === 'online' ? '#00e676' : '#aaa';
+      showToast("Could not update status.", 'error');
     }
-}
+  }
+
+  // Map layer control functions
+  window.currentTrafficLayer = null;
+
+  function changeMapType(element, mapTypeId) {
+    if (!window.deliveryTracker || !window.deliveryTracker.map) return;
+
+    // Update Map
+    window.deliveryTracker.map.setMapTypeId(mapTypeId);
+
+    // Update UI
+    document.querySelectorAll('.map-type-option').forEach(el => {
+      if (el.id !== 'traffic-toggle-opt') el.classList.remove('active');
+    });
+    element.classList.add('active');
+  }
+
+  function toggleTrafficLayer(element) {
+    if (!window.deliveryTracker || !window.deliveryTracker.map) return;
+
+    if (window.currentTrafficLayer) {
+      window.currentTrafficLayer.setMap(null);
+      window.currentTrafficLayer = null;
+      element.classList.remove('active');
+    } else {
+      window.currentTrafficLayer = new google.maps.TrafficLayer();
+      window.currentTrafficLayer.setMap(window.deliveryTracker.map);
+      element.classList.add('active');
+    }
+  }
+
+  // Close map layer menu when clicking outside
+  window.addEventListener('click', function (e) {
+    const popover = document.getElementById('map-layer-menu');
+    const btn = document.getElementById('map-layer-btn');
+    if (popover && popover.classList.contains('active')) {
+      if (!popover.contains(e.target) && !btn.contains(e.target)) {
+        popover.classList.remove('active');
+      }
+    }
+  });
 </script>
 
 <style>
-/* Modal overlay styles */
-.modal-overlay {
+  /* Modal overlay styles */
+  .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-}
-.modal-content {
+  }
+
+  .modal-content {
     background: white;
     padding: var(--space-8);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-xl);
-}
-/* Custom Scrollbar for task list */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--bg-color);
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
+  }
 
-/* Tracking Card Styles */
-.task-card-active {
-  border-left: 4px solid var(--orange);
-}
-.eta-badge {
+  /* Custom Scrollbar for task list */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Tracking Card Styles */
+  .task-card-active {
+    border-left: 4px solid var(--orange);
+  }
+
+  .eta-badge {
     position: absolute;
     bottom: 20px;
     right: 20px;
@@ -508,6 +650,105 @@ async function toggleAvailability(el) {
     font-weight: 700;
     color: var(--orange);
     z-index: 10;
-}
+  }
+</style>
+<style>
+  /* Modern Map Controls styling */
+  .shadow-btn {
+    background: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .shadow-btn:hover {
+    color: #333;
+    background: #f8f9fa;
+  }
+
+  .map-layer-popover {
+    position: absolute;
+    top: 50px;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    width: 300px;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+  }
+
+  .map-layer-popover.active {
+    display: flex;
+  }
+
+  .map-type-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #666;
+    padding: 4px;
+    border-radius: 6px;
+  }
+
+  .map-type-option:hover {
+    color: #333;
+  }
+
+  .map-type-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-size: cover;
+    background-position: center;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    background-color: #e0e0e0;
+  }
+
+  .map-type-option.active .map-type-img {
+    border-color: #1a73e8;
+    /* Google maps blue */
+  }
+
+  .map-type-option.active span {
+    color: #1a73e8;
+    font-weight: 500;
+  }
+
+  .default-map {
+    background-image: url('https://maps.gstatic.com/tactile/basepage/pegman_v4.png');
+    background-color: #e8ede9;
+  }
+
+  .satellite-map {
+    background-image: url('https://maps.googleapis.com/maps/api/staticmap?center=0,0&zoom=1&size=60x60&maptype=satellite');
+  }
+
+  .terrain-map {
+    background-image: url('https://maps.googleapis.com/maps/api/staticmap?center=0,0&zoom=1&size=60x60&maptype=terrain');
+  }
+
+  .traffic-map {
+    background: #555;
+  }
 </style>
 {% endblock %}

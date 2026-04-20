@@ -20,3 +20,11 @@ test_accept.py
 test_reject.py
 CORTEX_STEP_TYPE_BROWSER_SUBAGENT
 CORTEX_STEP_TYPE_CODE_ACTION
+
+# Agent-specific directories
+.agents/
+.claude/
+.windsurf/
+
+# Temporary files
+temp.html
